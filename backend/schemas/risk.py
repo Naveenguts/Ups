@@ -43,3 +43,5 @@ class ApplyActionRequest(BaseModel):
     description: Optional[str] = None
     expected_delay_reduction: Optional[float] = 4.5
     expected_risk_reduction: Optional[float] = 4.1
+    route_id: Optional[str] = None  # "default", "route_b", "route_c", "route_d"
+

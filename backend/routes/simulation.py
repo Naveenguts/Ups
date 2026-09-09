@@ -263,15 +263,18 @@ async def apply_operational_action(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Applies prescriptive intervention (e.g. Reroute through Hub B):
-    1. Updates shipment status to REROUTED
-    2. Drops risk score from High/Critical to Low/Medium
+    Applies prescriptive routing intervention (Route B, Route C, Route D) or reverts to Default Route A:
+    1. Updates shipment status (IN_TRANSIT for default, or REROUTED_B / REROUTED_C / REROUTED_D)
+    2. Recalculates risk score, delay, and SLA probability
     3. Records new risk history point
     4. Automatically dispatches Customer Recovery Notification & Driver Dispatch Order!
     """
     stmt = (
         select(Shipment)
-        .options(selectinload(Shipment.risk_scores))
+        .options(
+            selectinload(Shipment.risk_scores),
+            selectinload(Shipment.risk_events),
+        )
         .where(Shipment.id == shipment_id)
     )
     result = await db.execute(stmt)
@@ -279,50 +282,123 @@ async def apply_operational_action(
     if not shipment:
         raise HTTPException(status_code=404, detail="Shipment not found")
 
-    shipment.status = "REROUTED"
-    shipment.current_location = "NH-75 Alternate Corridor"
+    action_lower = (request.action or "").lower()
+    route_id = (request.route_id or "").lower()
+    if not route_id:
+        if "default" in action_lower or "revert" in action_lower or "primary" in action_lower:
+            route_id = "default"
+        elif "route c" in action_lower or "nh-44" in action_lower or "southern" in action_lower:
+            route_id = "route_c"
+        elif "route d" in action_lower or "nh-69" in action_lower or "green" in action_lower:
+            route_id = "route_d"
+        else:
+            route_id = "route_b"
 
-    # Reduce risk score
-    reduced_risk = 4.2
-    reduced_delay = 2.1
-    reduced_sla_prob = 21.0
+    if route_id == "default":
+        # REVERT TO DEFAULT PRIMARY ROUTE (NH-48)
+        shipment.status = "IN_TRANSIT"
+        shipment.current_location = "Vellore (NH-48 Primary Corridor)"
+
+        # Calculate actual risk based on logged corridor risk events
+        weather_sev = 2.0
+        traffic_sev = 2.0
+        hub_sev = 1.0
+        for e in shipment.risk_events:
+            if e.event_type == "WEATHER":
+                weather_sev = float(e.severity)
+            elif e.event_type == "TRAFFIC":
+                traffic_sev = float(e.severity)
+            elif e.event_type in ("HUB_DELAY", "PORT_DELAY", "FLIGHT", "SORT_DELAY"):
+                hub_sev = max(hub_sev, float(e.severity))
+
+        target_risk = calculate_risk_score(weather=weather_sev, traffic=traffic_sev, hub=hub_sev)
+        target_delay = calculate_estimated_delay(target_risk)
+        target_sla_prob = calculate_sla_breach_probability(target_risk)
+
+        driver_route_text = "Highway NH-48 Primary Corridor via Vellore & Ambur"
+        driver_reason = "Vehicle restored to default primary transit vector (NH-48 Corridor)"
+        cust_reason = "Operating on standard primary corridor"
+    elif route_id == "route_c":
+        # ROUTE C: Southern 6-Lane Expressway (NH-44 via Krishnagiri & Hosur)
+        shipment.status = "REROUTED_C"
+        shipment.current_location = "NH-44 Southern Expressway"
+        target_risk = 2.8
+        target_delay = 1.2
+        target_sla_prob = 12.0
+        driver_route_text = "Highway NH-44 Southern 6-Lane Expressway via Harur & Krishnagiri"
+        driver_reason = "Southern high-speed bypass active: Zero flood cells, fluid 80 km/h cruising"
+        cust_reason = "Expedited via Southern 6-Lane Expressway"
+    elif route_id == "route_d":
+        # ROUTE D: Green Freight Corridor (NH-69 via Tirupati & Chintamani)
+        shipment.status = "REROUTED_D"
+        shipment.current_location = "NH-69 Green Freight Corridor"
+        target_risk = 2.3
+        target_delay = 0.8
+        target_sla_prob = 8.0
+        driver_route_text = "Highway NH-69 Dedicated Green Logistics Corridor into Bangalore North Logistics Park"
+        driver_reason = "Priority green logistics lane active: Zero toll & terminal queue"
+        cust_reason = "Expedited via Dedicated Green Logistics Corridor"
+    else:
+        # ROUTE B: Northern Expressway (NH-75 via Chittoor & Kolar bypass)
+        shipment.status = "REROUTED_B"
+        shipment.current_location = "NH-75 Alternate Corridor"
+        target_risk = 3.8
+        target_delay = 1.8
+        target_sla_prob = 19.0
+        driver_route_text = "Highway NH-75 Expressway via Chittoor & Kolar bypass"
+        driver_reason = f"Elevated bypass active: Bypasses NH-48 flash flooding and Ambur gridlock ({request.action})"
+        cust_reason = "Expedited via Northern Elevated Bypass NH-75"
 
     risk_score = RiskScore(
         shipment_id=shipment_id,
-        risk_score=reduced_risk,
-        sla_probability=reduced_sla_prob,
-        estimated_delay=reduced_delay,
+        risk_score=target_risk,
+        sla_probability=target_sla_prob,
+        estimated_delay=target_delay,
         timestamp=datetime.utcnow(),
     )
     db.add(risk_score)
 
-    # 1. Dispatch Customer Recovery Notice (Reason for delay update + New delivery time)
-    recovered_eta_str = (shipment.expected_delivery + timedelta(hours=reduced_delay)).strftime("%I:%M %p")
+    # 1. Dispatch Customer Recovery Notice
+    recovered_eta_str = (shipment.expected_delivery + timedelta(hours=target_delay)).strftime("%I:%M %p")
     cust_msg = generate_customer_recovery_text(
         tracking_number=shipment.tracking_number,
-        reason=request.action,
+        reason=cust_reason,
         new_delivery_time=f"{recovered_eta_str} IST",
     )
     await create_notification(db, shipment_id, "CUSTOMER", cust_msg, "SENT")
 
-    # 2. Dispatch Driver Fleet Route Change Order (New route + Reason for new route)
+    # 2. Dispatch Driver Fleet Route Change Order
     driver_msg = generate_driver_dispatch_text(
         tracking_number=shipment.tracking_number,
-        new_route="Highway NH-75 Expressway via Chittoor & Kolar bypass",
-        reason_for_new_route=f"Bypass NH-48 flash flooding, Ambur congestion, and Bangalore Hub dock backlog ({request.action})",
+        new_route=driver_route_text,
+        reason_for_new_route=driver_reason,
     )
     await create_notification(db, shipment_id, "DRIVER_DISPATCH", driver_msg, "DISPATCHED")
 
     await db.commit()
+
+    time_saved = 0.0
+    cost_saved = 0
+    if route_id == "route_b":
+        time_saved = 4.9
+        cost_saved = 4250
+    elif route_id == "route_c":
+        time_saved = 5.5
+        cost_saved = 4800
+    elif route_id == "route_d":
+        time_saved = 5.9
+        cost_saved = 5350
 
     return {
         "success": True,
         "message": f"Action '{request.action}' successfully applied to #{shipment.tracking_number}",
         "new_status": shipment.status,
         "new_location": shipment.current_location,
-        "recovered_risk_score": reduced_risk,
-        "recovered_sla_probability": reduced_sla_prob,
-        "recovered_delay_hours": reduced_delay,
+        "recovered_risk_score": target_risk,
+        "recovered_sla_probability": target_sla_prob,
+        "recovered_delay_hours": target_delay,
+        "time_saved_hours": time_saved,
+        "cost_saved_usd": cost_saved,
         "customer_recovered_eta": recovered_eta_str,
         "notifications_dispatched": ["CUSTOMER", "DRIVER_DISPATCH"],
     }

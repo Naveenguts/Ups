@@ -18,7 +18,7 @@ if not exist "frontend\node_modules" (
     cd ..
 )
 
-echo [3/3] Launching Backend & Frontend services...
+echo [3/3] Launching Backend and Frontend services...
 
 :: Launch FastAPI Backend on port 8000
 start "UPS RiskPilot - Backend (FastAPI)" cmd /k ".\.venv\Scripts\python -m uvicorn main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload"

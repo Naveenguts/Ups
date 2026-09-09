@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   AlertOctagon,
   ArrowLeft,
+  Zap,
+  Leaf,
 } from 'lucide-react';
 import RiskGauge from '../components/RiskGauge';
 import RouteMap from '../components/RouteMap';
@@ -35,7 +37,61 @@ export default function ShipmentDetail({
   const slaProb = shipment.latest_sla_probability ?? 12.0;
   const delay = shipment.latest_estimated_delay ?? 0.6;
   const isCritical = score >= 8.0;
-  const isRerouted = shipment.status === 'REROUTED';
+
+  const activeRoute =
+    shipment.status === 'REROUTED_C' ? 'route_c' :
+    shipment.status === 'REROUTED_D' ? 'route_d' :
+    (shipment.status === 'REROUTED' || shipment.status === 'REROUTED_B') ? 'route_b' :
+    'default';
+  const isRerouted = activeRoute !== 'default';
+
+  const handleRouteSelect = (routeId) => {
+    if (activeRoute === routeId) {
+      // User clicked the ALREADY ACTIVE route -> Toggle back to Default Route A!
+      onApplyAction({
+        action: 'Revert to Default Route A (NH-48 Corridor)',
+        route_id: 'default',
+        description: 'Vehicle returned to primary highway corridor schedule via NH-48.',
+        expected_delay_reduction: 0,
+        expected_risk_reduction: 0,
+      });
+      return;
+    }
+
+    if (routeId === 'default') {
+      onApplyAction({
+        action: 'Revert to Default Route A (NH-48 Corridor)',
+        route_id: 'default',
+        description: 'Vehicle returned to primary highway corridor schedule via NH-48.',
+        expected_delay_reduction: 0,
+        expected_risk_reduction: 0,
+      });
+    } else if (routeId === 'route_b') {
+      onApplyAction({
+        action: 'Reroute through Route B (NH-75 Chittoor Bypass)',
+        route_id: 'route_b',
+        description: 'Divert vehicle at Vellore junction via Highway NH-75. Bypasses the flooded corridor and dock queue.',
+        expected_delay_reduction: 4.5,
+        expected_risk_reduction: 4.1,
+      });
+    } else if (routeId === 'route_c') {
+      onApplyAction({
+        action: 'Reroute through Route C (NH-44 Southern 6-Lane Expressway)',
+        route_id: 'route_c',
+        description: 'High-speed southern diversion via Harur & Krishnagiri NH-44. Completely clear of storm cells, 80 km/h cruising.',
+        expected_delay_reduction: 4.8,
+        expected_risk_reduction: 5.2,
+      });
+    } else if (routeId === 'route_d') {
+      onApplyAction({
+        action: 'Reroute through Route D (NH-69 Green Freight Fast-Track)',
+        route_id: 'route_d',
+        description: 'Dedicated priority logistics corridor via Tirupati and Chintamani bypass into Bangalore North.',
+        expected_delay_reduction: 5.2,
+        expected_risk_reduction: 5.8,
+      });
+    }
+  };
 
   const handleTriggerAIExplain = async () => {
     setLoadingAI(true);
@@ -239,40 +295,182 @@ export default function ShipmentDetail({
             <span>{loadingAI ? 'Analyzing...' : 'Explain Risk & Recommend'}</span>
           </button>
 
-          {/* Reroute Action Button */}
-          {!isRerouted ? (
-            <button
-              onClick={() => onApplyAction({
-                action: 'Reroute through Bangalore Hub B',
-                description: 'Divert vehicle at Vellore junction via Highway NH-75. Bypasses the flooded corridor and dock queue.',
-                expected_delay_reduction: 4.5,
-                expected_risk_reduction: 4.1,
-              })}
-              className="btn-primary"
-              style={{ fontSize: '11px', padding: '6px 12px' }}
-            >
-              <Navigation style={{ width: '13px', height: '13px' }} />
-              <span>🔄 Reroute Hub B</span>
-            </button>
-          ) : (
+        </div>
+
+        {/* Multi-Route Corridor Selection & Toggle Bar */}
+        <div style={{
+          marginTop: '12px',
+          paddingTop: '12px',
+          borderTop: '1px solid #1E293B',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '10px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              background: 'rgba(16, 185, 129, 0.2)',
-              border: '1px solid rgba(16, 185, 129, 0.5)',
-              color: '#10B981',
               fontSize: '11px',
-              fontWeight: 800,
               fontFamily: 'var(--font-mono)',
+              fontWeight: 800,
+              color: 'var(--ups-gold)',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
             }}>
-              <ShieldCheck style={{ width: '14px', height: '14px' }} />
-              <span>REROUTED TO ROUTE B</span>
+              <Navigation style={{ width: '13px', height: '13px' }} />
+              <span>DISPATCH CORRIDOR ROUTING:</span>
+            </span>
+
+            {/* Route A (Default) Button */}
+            <button
+              onClick={() => handleRouteSelect('default')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                background: activeRoute === 'default' ? 'rgba(255, 181, 0, 0.2)' : 'rgba(15, 23, 42, 0.7)',
+                color: activeRoute === 'default' ? 'var(--ups-gold)' : 'var(--text-slate-400)',
+                border: activeRoute === 'default' ? '1px solid var(--ups-gold)' : '1px solid #334155',
+              }}
+              title="Primary highway corridor via NH-48 (Baseline)"
+            >
+              <span>{activeRoute === 'default' ? '● ' : '○ '}Route A (Default NH-48)</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-slate-400)', borderLeft: '1px solid #334155', paddingLeft: '6px' }}>
+                Baseline (0h / $0)
+              </span>
+            </button>
+
+            {/* Route B Button */}
+            <button
+              onClick={() => handleRouteSelect('route_b')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                background: activeRoute === 'route_b' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(15, 23, 42, 0.7)',
+                color: activeRoute === 'route_b' ? '#10B981' : 'var(--text-slate-300)',
+                border: activeRoute === 'route_b' ? '1px solid #10B981' : '1px solid #334155',
+              }}
+              title="Northern expressway via NH-75 Chittoor bypass (Save 4.9h / $4,250 • Click again to revert to default)"
+            >
+              <span>{activeRoute === 'route_b' ? '● ' : '○ '}🟢 Route B (NH-75 Plateau)</span>
+              <span style={{ fontSize: '10px', color: '#10B981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                ⏱️ +4.9h | 💰 $4,250
+              </span>
+              {activeRoute === 'route_b' && (
+                <span style={{ fontSize: '9px', background: '#10B981', color: '#000', padding: '2px 5px', borderRadius: '4px', fontWeight: 900 }}>
+                  ACTIVE (Click to reset)
+                </span>
+              )}
+            </button>
+
+            {/* Route C Button */}
+            <button
+              onClick={() => handleRouteSelect('route_c')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                background: activeRoute === 'route_c' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(15, 23, 42, 0.7)',
+                color: activeRoute === 'route_c' ? '#22D3EE' : 'var(--text-slate-300)',
+                border: activeRoute === 'route_c' ? '1px solid #06B6D4' : '1px solid #334155',
+              }}
+              title="Southern 6-lane express via NH-44 Krishnagiri & Hosur (Save 5.5h / $4,800 • Click again to revert to default)"
+            >
+              <Zap style={{ width: '12px', height: '12px', color: '#22D3EE' }} />
+              <span>{activeRoute === 'route_c' ? '● ' : '○ '}Route C (NH-44 6-Lane)</span>
+              <span style={{ fontSize: '10px', color: '#22D3EE', background: 'rgba(6, 182, 212, 0.15)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
+                ⏱️ +5.5h | 💰 $4,800
+              </span>
+              {activeRoute === 'route_c' && (
+                <span style={{ fontSize: '9px', background: '#06B6D4', color: '#000', padding: '2px 5px', borderRadius: '4px', fontWeight: 900 }}>
+                  ACTIVE (Click to reset)
+                </span>
+              )}
+            </button>
+
+            {/* Route D Button */}
+            <button
+              onClick={() => handleRouteSelect('route_d')}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                background: activeRoute === 'route_d' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(15, 23, 42, 0.7)',
+                color: activeRoute === 'route_d' ? '#C084FC' : 'var(--text-slate-300)',
+                border: activeRoute === 'route_d' ? '1px solid #A855F7' : '1px solid #334155',
+              }}
+              title="Dedicated Green Freight Corridor via NH-69 (Save 5.9h / $5,350 • Click again to revert to default)"
+            >
+              <Leaf style={{ width: '12px', height: '12px', color: '#C084FC' }} />
+              <span>{activeRoute === 'route_d' ? '● ' : '○ '}Route D (NH-69 Green Freight)</span>
+              <span style={{ fontSize: '10px', color: '#C084FC', background: 'rgba(168, 85, 247, 0.15)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                ⏱️ +5.9h | 💰 $5,350
+              </span>
+              {activeRoute === 'route_d' && (
+                <span style={{ fontSize: '9px', background: '#A855F7', color: '#000', padding: '2px 5px', borderRadius: '4px', fontWeight: 900 }}>
+                  ACTIVE (Click to reset)
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Active Route Status Badge */}
+          {activeRoute !== 'default' ? (
+            <span style={{
+              fontSize: '11px',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              color: '#10B981',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              background: 'rgba(16, 185, 129, 0.12)',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+            }}>
+              <ShieldCheck style={{ width: '13px', height: '13px' }} />
+              <span>Bypass Active • Click active route again to restore Default</span>
+            </span>
+          ) : (
+            <span style={{
+              fontSize: '11px',
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--text-slate-400)',
+            }}>
+              Operating on Primary Highway Schedule
             </span>
           )}
-
         </div>
       </div>
 
@@ -333,12 +531,8 @@ export default function ShipmentDetail({
             currentLocation={shipment.current_location}
             riskScore={score}
             status={shipment.status}
-            onSimulateReroute={() => onApplyAction({
-              action: 'Reroute through Bangalore Hub B',
-              description: 'Divert vehicle at Vellore junction via Highway NH-75.',
-              expected_delay_reduction: 4.5,
-              expected_risk_reduction: 4.1,
-            })}
+            onSimulateReroute={() => handleRouteSelect('route_b')}
+            onSelectRoute={handleRouteSelect}
           />
         </div>
 

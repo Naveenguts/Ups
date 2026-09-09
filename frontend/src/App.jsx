@@ -120,7 +120,8 @@ export default function App() {
   const handleApplyAction = async (actionPayload) => {
     try {
       const res = await applyOperationalAction(selectedId, actionPayload);
-      showToast(`✓ Action Applied: ${actionPayload.action}! SLA Recovered to ${res.recovered_sla_probability}%`);
+      const savingsStr = res.time_saved_hours ? ` [⏱️ +${res.time_saved_hours}h Saved | 💰 $${res.cost_saved_usd} Saved]` : '';
+      showToast(`✓ Routing Updated: ${actionPayload.action}! SLA Recovered: ${res.recovered_sla_probability}%${savingsStr}`);
       await loadData();
       setIsNotifModalOpen(true);
     } catch (e) {
