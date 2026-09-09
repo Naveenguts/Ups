@@ -40,25 +40,31 @@ export default function RouteMap({
   status = "IN_TRANSIT",
   onSimulateReroute,
   onSelectRoute,
+  onOpenCalculationModal,
 }) {
   const [showHud, setShowHud] = useState(true);
 
   // Key Geographic Coordinates
   const chennaiCoords = [13.0827, 80.2707];
-  const velloreCoords = [12.9165, 79.1325];
-  const amborCoords = [12.7904, 78.7166];
+  const velloreCoords = [12.9165, 79.1325]; // Mid-Transit Position (Km 128)
+  const amborCoords = [12.7904, 78.7166];   // Disruption Zone (Flooded NH-48)
   const bangaloreCoords = [12.9716, 77.5946];
   const chittoorCoords = [13.2172, 79.1003];
   const kolarCoords = [13.1367, 78.1291];
   const krishnagiriCoords = [12.5266, 78.2146];
   const hosurCoords = [12.7409, 77.8253];
 
-  // 1. Route A: Complete Default Primary Corridor (NH-48 via Vellore & Ambur)
-  const primaryRoute = [
+  // 1. Traversed Leg (Completed prior to disruption: Chennai DC -> Vellore Km-128)
+  const traversedRoute = [
     chennaiCoords,
     [13.0100, 80.0500],
     [12.9719, 79.6953],
     [12.9300, 79.3300],
+    velloreCoords,
+  ];
+
+  // 2. Disrupted NH-48 Corridor Ahead (Vellore -> Ambur flood bottleneck -> Krishnagiri -> Bangalore)
+  const disruptedCorridorAhead = [
     velloreCoords,
     amborCoords,
     [12.6825, 78.6186],
@@ -67,12 +73,18 @@ export default function RouteMap({
     bangaloreCoords,
   ];
 
-  // 2. Route B: Complete Northern Expressway (NH-75 via Chittoor & Kolar)
-  const alternateRouteB = [
-    chennaiCoords,
-    [13.0100, 80.0500],
-    [12.9719, 79.6953],
-    [12.9300, 79.3300],
+  // Full Default Route A (NH-48 via Ambur)
+  const primaryRoute = [
+    ...traversedRoute,
+    amborCoords,
+    [12.6825, 78.6186],
+    krishnagiriCoords,
+    hosurCoords,
+    bangaloreCoords,
+  ];
+
+  // 3. Alternate Bypass Leg B (Mid-Transit Diversion from Vellore via NH-75 Chittoor & Kolar)
+  const bypassLegB = [
     velloreCoords,
     chittoorCoords,
     [13.2000, 78.7500],
@@ -81,30 +93,30 @@ export default function RouteMap({
     [13.0709, 77.7981],
     bangaloreCoords,
   ];
+  const alternateRouteB = [...traversedRoute, ...bypassLegB.slice(1)];
 
-  // 3. Route C: Complete Southern 6-Lane Expressway (NH-44 via Harur & Krishnagiri)
-  const alternateRouteC = [
-    chennaiCoords,
-    [12.9200, 79.8000],
-    [12.8342, 79.7036],
-    [12.4500, 78.9000],
-    [12.2500, 78.6000],
+  // 4. Alternate Bypass Leg C (Mid-Transit Diversion from Vellore via NH-44 6-Lane Expressway)
+  const bypassLegC = [
+    velloreCoords,
+    [12.7500, 78.8500],
+    [12.5000, 78.5800],
     krishnagiriCoords,
     hosurCoords,
     [12.8452, 77.6602],
     bangaloreCoords,
   ];
+  const alternateRouteC = [...traversedRoute, ...bypassLegC.slice(1)];
 
-  // 4. Route D: Complete Green Freight Fast-Track (NH-69 via Tirupati & Chintamani)
-  const alternateRouteD = [
-    chennaiCoords,
-    [13.2500, 79.7500],
-    [13.6288, 79.4192],
-    [13.5500, 78.5000],
-    [13.4000, 78.0500],
+  // 5. Alternate Bypass Leg D (Mid-Transit Diversion from Vellore via NH-69 Green Freight)
+  const bypassLegD = [
+    velloreCoords,
+    [13.1500, 79.0500],
+    [13.4000, 78.6000],
+    [13.3500, 78.0500],
     [13.2483, 77.7126],
     bangaloreCoords,
   ];
+  const alternateRouteD = [...traversedRoute, ...bypassLegD.slice(1)];
 
   // Active Route Evaluation
   const activeRoute =
@@ -301,6 +313,30 @@ export default function RouteMap({
               {routeMeta.name}
             </div>
           </div>
+
+          {onOpenCalculationModal && (
+            <button
+              onClick={onOpenCalculationModal}
+              style={{
+                background: 'rgba(255, 181, 0, 0.15)',
+                border: '1px solid rgba(255, 181, 0, 0.45)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                color: 'var(--ups-gold)',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontFamily: 'var(--font-mono)',
+                transition: 'all 0.2s',
+              }}
+              title="Click to view full mathematical & financial calculation formula"
+            >
+              <span>💡 Formula</span>
+            </button>
+          )}
         </div>
 
       </div>
@@ -318,52 +354,45 @@ export default function RouteMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* 1. ROUTE A (NH-48 Primary Corridor) */}
-        {activeRoute === 'default' ? (
-          <>
-            <Polyline
-              positions={primaryRoute}
-              color={routeMeta.color}
-              weight={12}
-              opacity={0.35}
-            />
-            <Polyline
-              positions={primaryRoute}
-              color={routeMeta.color}
-              weight={6}
-              opacity={1.0}
-            >
-              <Tooltip sticky>Route A (Default NH-48): {isCritical ? "Disrupted Corridor" : "Standard Route"}</Tooltip>
-            </Polyline>
-          </>
-        ) : (
+        {/* 0. COMPLETED TRAVERSED LEG (Chennai DC -> Vellore Km-128) */}
+        <Polyline
+          positions={traversedRoute}
+          color="#38BDF8"
+          weight={7}
+          opacity={0.85}
+        >
+          <Tooltip sticky>✓ Traversed Leg: Chennai DC ➔ Vellore (128 km completed)</Tooltip>
+        </Polyline>
+
+        {/* If an alternate route is active, show the abandoned flooded segment on NH-48 */}
+        {activeRoute !== 'default' && (
           <Polyline
-            positions={primaryRoute}
-            color="#64748B"
-            weight={2}
-            dashArray="4, 8"
-            opacity={0.25}
+            positions={disruptedCorridorAhead}
+            color="#EF4444"
+            weight={3}
+            dashArray="6, 8"
+            opacity={0.45}
           >
-            <Tooltip sticky>Route A (NH-48 Primary): Default Route (Click to activate)</Tooltip>
+            <Tooltip sticky>⛔ Avoided Disrupted Corridor: Flooded NH-48 (Ambur Bottleneck - 6.7h Gridlock Avoided)</Tooltip>
           </Polyline>
         )}
 
-        {/* 2. ROUTE B (NH-75 Northern Plateau) */}
-        {activeRoute === 'route_b' ? (
+        {/* 1. ROUTE A (NH-48 Primary Corridor Remaining Leg) */}
+        {activeRoute === 'default' ? (
           <>
             <Polyline
-              positions={alternateRouteB}
-              color="#10B981"
+              positions={disruptedCorridorAhead}
+              color={routeMeta.color}
               weight={12}
               opacity={0.35}
             />
             <Polyline
-              positions={alternateRouteB}
-              color="#10B981"
+              positions={disruptedCorridorAhead}
+              color={routeMeta.color}
               weight={6}
               opacity={1.0}
             >
-              <Tooltip sticky>Route B (NH-75 Plateau): Save 4.9h • $4,250 Saved</Tooltip>
+              <Tooltip sticky>Route A (Default NH-48): {isCritical ? "Disrupted Ambur Corridor (22 km/h)" : "Standard Route"}</Tooltip>
             </Polyline>
           </>
         ) : (
@@ -378,71 +407,101 @@ export default function RouteMap({
           </Polyline>
         )}
 
-        {/* 3. ROUTE C (NH-44 Southern 6-Lane Expressway) */}
+        {/* 2. ROUTE B (NH-75 Northern Plateau Mid-Transit Bypass) */}
+        {activeRoute === 'route_b' ? (
+          <>
+            <Polyline
+              positions={bypassLegB}
+              color="#10B981"
+              weight={12}
+              opacity={0.35}
+            />
+            <Polyline
+              positions={bypassLegB}
+              color="#10B981"
+              weight={6}
+              opacity={1.0}
+            >
+              <Tooltip sticky>Route B (NH-75 Plateau): Diverted from Vellore Km-128 • Save 4.9h • $4,250</Tooltip>
+            </Polyline>
+          </>
+        ) : (
+          <Polyline
+            positions={bypassLegB}
+            color="#10B981"
+            weight={2}
+            dashArray="4, 8"
+            opacity={0.25}
+          >
+            <Tooltip sticky>Route B (NH-75 Plateau Bypass): Diverts from Vellore Km-128</Tooltip>
+          </Polyline>
+        )}
+
+        {/* 3. ROUTE C (NH-44 Southern 6-Lane Expressway Mid-Transit Bypass) */}
         {activeRoute === 'route_c' ? (
           <>
             <Polyline
-              positions={alternateRouteC}
+              positions={bypassLegC}
               color="#06B6D4"
               weight={12}
               opacity={0.35}
             />
             <Polyline
-              positions={alternateRouteC}
+              positions={bypassLegC}
               color="#06B6D4"
               weight={6}
               opacity={1.0}
             >
-              <Tooltip sticky>Route C (NH-44 6-Lane): Save 5.5h • $4,800 Saved</Tooltip>
+              <Tooltip sticky>Route C (NH-44 6-Lane): Diverted from Vellore Km-128 • Save 5.5h • $4,800</Tooltip>
             </Polyline>
           </>
         ) : (
           <Polyline
-            positions={alternateRouteC}
+            positions={bypassLegC}
             color="#06B6D4"
             weight={2}
             dashArray="4, 8"
             opacity={0.25}
           >
-            <Tooltip sticky>Route C (NH-44 6-Lane): Save 5.5h • $4,800 Saved</Tooltip>
+            <Tooltip sticky>Route C (NH-44 6-Lane Bypass): Diverts from Vellore Km-128</Tooltip>
           </Polyline>
         )}
 
-        {/* 4. ROUTE D (NH-69 Green Freight Express) */}
+        {/* 4. ROUTE D (NH-69 Green Freight Express Mid-Transit Bypass) */}
         {activeRoute === 'route_d' ? (
           <>
             <Polyline
-              positions={alternateRouteD}
+              positions={bypassLegD}
               color="#A855F7"
               weight={12}
               opacity={0.35}
             />
             <Polyline
-              positions={alternateRouteD}
+              positions={bypassLegD}
               color="#A855F7"
               weight={6}
               opacity={1.0}
             >
-              <Tooltip sticky>Route D (NH-69 Green Freight): Save 5.9h • $5,350 Saved</Tooltip>
+              <Tooltip sticky>Route D (NH-69 Green Freight): Diverted from Vellore Km-128 • Save 5.9h • $5,350</Tooltip>
             </Polyline>
           </>
         ) : (
           <Polyline
-            positions={alternateRouteD}
+            positions={bypassLegD}
             color="#A855F7"
             weight={2}
             dashArray="4, 8"
             opacity={0.25}
           >
-            <Tooltip sticky>Route D (NH-69 Green Freight): Save 5.9h • $5,350 Saved</Tooltip>
+            <Tooltip sticky>Route D (NH-69 Green Freight Bypass): Diverts from Vellore Km-128</Tooltip>
           </Polyline>
         )}
 
-        {/* Hazard Storm Zone Circle around Vellore if severe */}
+        {/* Hazard Storm Zone Circle around Ambur / Vellore if severe */}
         {riskScore >= 5.0 && activeRoute === 'default' && (
           <Circle
-            center={velloreCoords}
-            radius={28000}
+            center={amborCoords}
+            radius={25000}
             pathOptions={{
               color: '#EF4444',
               fillColor: '#EF4444',
@@ -454,17 +513,39 @@ export default function RouteMap({
             <Popup>
               <div style={{ color: '#000000', fontSize: '11px', padding: '4px' }}>
                 <strong style={{ color: '#EF4444' }}>🌧 Weather & Traffic Bottleneck Cell</strong>
-                <p style={{ marginTop: '4px' }}>Precipitation: 48mm/hr. Velocity reduced to 18 km/h. Alternate routes bypass this cell.</p>
+                <p style={{ marginTop: '4px' }}>Ambur Corridor: Precipitation 48mm/hr. Velocity reduced to 18 km/h. Alternate routes bypass this cell.</p>
               </div>
             </Popup>
           </Circle>
         )}
 
-        {/* ONLY KEY MARKERS: Chennai Origin, Bangalore Destination, and Active Truck */}
+        {/* 1. CHENNAI ORIGIN MARKER */}
         <Marker position={chennaiCoords} icon={createCustomIcon('#FFB500', 'Chennai Origin', '📦')}>
-          <Popup>Origin: Chennai Distribution Center</Popup>
+          <Popup>Origin: Chennai Distribution Center (Departure 08:30 IST)</Popup>
         </Marker>
 
+        {/* 2. MID-TRANSIT DIVERSION JUNCTION MARKER (VELLORE KM-128) */}
+        <Marker position={velloreCoords} icon={createCustomIcon('#F59E0B', '📍 DIVERSION (Km-128)', '🔀')}>
+          <Popup>
+            <div style={{ color: '#000000', fontSize: '11px', padding: '4px', maxWidth: '240px' }}>
+              <strong style={{ color: '#D97706', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                🔀 Mid-Transit Diversion Point (Km 128 - Vellore)
+              </strong>
+              <p style={{ margin: '3px 0' }}><strong>Current Position:</strong> Truck TRK-8821 reached here at 15:42 IST.</p>
+              <p style={{ margin: '3px 0', color: '#DC2626' }}><strong>Ahead on NH-48:</strong> Flooded Ambur corridor (+6.7h gridlock).</p>
+              <p style={{ margin: '3px 0', color: '#059669', fontWeight: 700 }}>
+                {activeRoute !== 'default'
+                  ? `✓ Diverted mid-transit onto ${routeMeta.name}!`
+                  : '⚠ Operating on flooded default route. Click Route B/C/D to divert.'}
+              </p>
+              <p style={{ margin: '3px 0', color: '#64748B', fontSize: '10px' }}>
+                Time & cost savings calculated strictly for remaining 218 km from this point.
+              </p>
+            </div>
+          </Popup>
+        </Marker>
+
+        {/* 3. ACTIVE TRUCK POSITION */}
         <Marker position={routeMeta.truckPos} icon={createCustomIcon(activeRoute !== 'default' ? routeMeta.color : (isCritical ? '#EF4444' : '#3B82F6'), routeMeta.truckLabel, '🚚')}>
           <Popup>
             <div style={{ color: '#000000', fontSize: '12px', padding: '4px' }}>
@@ -477,6 +558,7 @@ export default function RouteMap({
           </Popup>
         </Marker>
 
+        {/* 4. BANGALORE DESTINATION HUB */}
         <Marker position={bangaloreCoords} icon={createCustomIcon('#10B981', 'Bangalore Hub', '🏁')}>
           <Popup>Destination: Bangalore Inbound Hub (SLA Target: 20:00 IST)</Popup>
         </Marker>

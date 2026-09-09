@@ -13,11 +13,13 @@ import {
   ArrowLeft,
   Zap,
   Leaf,
+  Calculator,
 } from 'lucide-react';
 import RiskGauge from '../components/RiskGauge';
 import RouteMap from '../components/RouteMap';
 import RiskHistoryChart from '../components/RiskHistoryChart';
 import FactorBreakdown from '../components/FactorBreakdown';
+import SavingsCalculationModal from '../components/SavingsCalculationModal';
 
 export default function ShipmentDetail({
   shipment,
@@ -30,6 +32,7 @@ export default function ShipmentDetail({
   onOpenNotifications,
 }) {
   const [loadingAI, setLoadingAI] = useState(false);
+  const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
 
   if (!shipment) return null;
 
@@ -444,33 +447,58 @@ export default function ShipmentDetail({
             </button>
           </div>
 
-          {/* Active Route Status Badge */}
-          {activeRoute !== 'default' ? (
-            <span style={{
-              fontSize: '11px',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              color: '#10B981',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              background: 'rgba(16, 185, 129, 0.12)',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-            }}>
-              <ShieldCheck style={{ width: '13px', height: '13px' }} />
-              <span>Bypass Active • Click active route again to restore Default</span>
-            </span>
-          ) : (
-            <span style={{
-              fontSize: '11px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-slate-400)',
-            }}>
-              Operating on Primary Highway Schedule
-            </span>
-          )}
+          {/* Active Route Status Badge & Savings Calculation Trigger Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setIsCalcModalOpen(true)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                background: 'rgba(255, 181, 0, 0.15)',
+                border: '1px solid rgba(255, 181, 0, 0.45)',
+                color: 'var(--ups-gold)',
+                fontSize: '11px',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+              title="Click to view full mathematical & financial calculation formula"
+            >
+              <Calculator style={{ width: '13px', height: '13px' }} />
+              <span>💡 How Time & Cost are Calculated</span>
+            </button>
+
+            {activeRoute !== 'default' ? (
+              <span style={{
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 700,
+                color: '#10B981',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: 'rgba(16, 185, 129, 0.12)',
+                padding: '5px 10px',
+                borderRadius: '6px',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+              }}>
+                <ShieldCheck style={{ width: '13px', height: '13px' }} />
+                <span>Bypass Active • Click active route again to restore Default</span>
+              </span>
+            ) : (
+              <span style={{
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-slate-400)',
+              }}>
+                Operating on Primary Highway Schedule
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -533,6 +561,7 @@ export default function ShipmentDetail({
             status={shipment.status}
             onSimulateReroute={() => handleRouteSelect('route_b')}
             onSelectRoute={handleRouteSelect}
+            onOpenCalculationModal={() => setIsCalcModalOpen(true)}
           />
         </div>
 
@@ -634,6 +663,13 @@ export default function ShipmentDetail({
           )}
         </div>
       </div>
+
+      {/* SAVINGS CALCULATION FORMULA & MID-TRANSIT REROUTE MODAL */}
+      <SavingsCalculationModal
+        isOpen={isCalcModalOpen}
+        onClose={() => setIsCalcModalOpen(false)}
+        activeRoute={activeRoute}
+      />
     </div>
   );
 }
