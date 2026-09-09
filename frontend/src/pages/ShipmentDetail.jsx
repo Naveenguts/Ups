@@ -11,8 +11,6 @@ import {
   ShieldCheck,
   AlertOctagon,
   ArrowLeft,
-  Anchor,
-  Plane,
 } from 'lucide-react';
 import RiskGauge from '../components/RiskGauge';
 import RouteMap from '../components/RouteMap';
@@ -164,26 +162,6 @@ export default function ShipmentDetail({
           >
             <Warehouse style={{ width: '13px', height: '13px', color: '#F87171' }} />
             <span>🏭 Hub Delay (10/10)</span>
-          </button>
-
-          <button
-            onClick={() => onSimulateEvent(shipment.id, 'PORT_DELAY', 9, 'JNPT / Chennai Sea Port container terminal berth congestion & 48h customs dwell backlog')}
-            className="btn-secondary"
-            style={{ fontSize: '11px', padding: '6px 10px' }}
-            title="Simulate maritime container port congestion"
-          >
-            <Anchor style={{ width: '13px', height: '13px', color: '#38BDF8' }} />
-            <span>⚓ Port Congestion (9/10)</span>
-          </button>
-
-          <button
-            onClick={() => onSimulateEvent(shipment.id, 'FLIGHT', 9, 'Air Cargo Freighter aviation ground stop & runway weather holding delay')}
-            className="btn-secondary"
-            style={{ fontSize: '11px', padding: '6px 10px' }}
-            title="Simulate air cargo flight delay"
-          >
-            <Plane style={{ width: '13px', height: '13px', color: '#A78BFA' }} />
-            <span>✈️ Flight Delay (9/10)</span>
           </button>
 
           <div style={{ width: '1px', height: '20px', background: '#334155' }}></div>
