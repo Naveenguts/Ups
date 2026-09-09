@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Radio, Play, Pause, RotateCcw, Cpu, CloudRain, Car, Warehouse, Sparkles, Satellite, Anchor, Plane } from 'lucide-react';
-import { fetchLiveCorridorWeather } from '../services/api';
+import { fetchLiveCorridorWeather, fetchLiveCorridorTraffic } from '../services/api';
 
-export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, onSensorTick, onSyncWeather, onReset, onOpenAIModal }) {
+export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, onSensorTick, onSyncWeather, onSyncTraffic, onReset, onOpenAIModal }) {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [liveWeather, setLiveWeather] = useState(null);
+  const [liveTraffic, setLiveTraffic] = useState(null);
 
   useEffect(() => {
     fetchLiveCorridorWeather('Vellore')
       .then((data) => setLiveWeather(data))
       .catch((err) => console.log('Weather notice:', err));
+
+    fetchLiveCorridorTraffic('Vellore')
+      .then((data) => setLiveTraffic(data))
+      .catch((err) => console.log('Traffic notice:', err));
   }, []);
 
   const telemetryEvents = [
@@ -24,20 +29,22 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
       color: (liveWeather?.severity ?? 2) > 5 ? '#F87171' : '#10B981',
     },
     {
+      type: 'TRAFFIC',
+      severity: liveTraffic?.severity ?? 3.0,
+      label: liveTraffic?.status === 'LIVE_API' ? 'TomTom Live Traffic GPS' : 'Highway NH-48 Traffic GPS',
+      detail: liveTraffic?.status === 'LIVE_API'
+        ? `Vellore Corridor (Live): Speed ${liveTraffic.current_speed_kmh} km/h (Freeflow ${liveTraffic.free_flow_speed_kmh} km/h) • Delay +${liveTraffic.delay_seconds}s • Severity ${liveTraffic.severity}/10`
+        : 'Highway NH-48 GPS: Average velocity slowed to 18 km/h near Ambur junction (14km queue)',
+      icon: Car,
+      color: (liveTraffic?.severity ?? 3.0) > 5 ? '#F87171' : (liveTraffic?.status === 'LIVE_API' ? '#10B981' : '#FB923C'),
+    },
+    {
       type: 'WEATHER',
       severity: 9,
       label: 'Monsoon Rain Cell Detected',
       detail: 'Vellore Km-128 Doppler Radar: 48mm/hr intense precipitation • Flash flood advisory',
       icon: CloudRain,
       color: '#60A5FA',
-    },
-    {
-      type: 'TRAFFIC',
-      severity: 9,
-      label: 'Highway Gridlock Alert',
-      detail: 'Highway NH-48 GPS: Average velocity slowed to 18 km/h near Ambur junction (14km queue)',
-      icon: Car,
-      color: '#FB923C',
     },
     {
       type: 'HUB_DELAY',
@@ -129,9 +136,13 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
             letterSpacing: '0.05em',
             textTransform: 'uppercase',
           }}>
-            {liveWeather?.status === 'LIVE_API'
-              ? 'LIVE IoT STREAM • OPENWEATHERMAP CONNECTED 🟢'
-              : isStreaming ? 'LIVE IoT TELEMETRY STREAM' : 'IoT STREAM PAUSED'}
+            {liveWeather?.status === 'LIVE_API' && liveTraffic?.status === 'LIVE_API'
+              ? 'LIVE IoT STREAM • OPENWEATHER 🛰️ & TOMTOM GPS 🚗 CONNECTED 🟢'
+              : liveWeather?.status === 'LIVE_API'
+                ? 'LIVE IoT STREAM • OPENWEATHERMAP CONNECTED 🟢'
+                : liveTraffic?.status === 'LIVE_API'
+                  ? 'LIVE IoT STREAM • TOMTOM GPS CONNECTED 🟢'
+                  : isStreaming ? 'LIVE IoT TELEMETRY STREAM' : 'IoT STREAM PAUSED'}
           </span>
         </div>
 
@@ -188,6 +199,31 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
           >
             <CloudRain style={{ width: '12px', height: '12px' }} />
             <span>🛰️ Sync OpenWeather</span>
+          </button>
+        )}
+
+        {/* Sync Live TomTom Traffic Button */}
+        {onSyncTraffic && (
+          <button
+            onClick={onSyncTraffic}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: '8px',
+              fontSize: '0.6875rem',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              cursor: 'pointer',
+              background: 'rgba(251, 146, 60, 0.15)',
+              color: '#FB923C',
+              border: '1px solid rgba(251, 146, 60, 0.4)',
+            }}
+            title="Query real-time TomTom GPS traffic flow for corridor"
+          >
+            <Car style={{ width: '12px', height: '12px' }} />
+            <span>🚗 Sync TomTom</span>
           </button>
         )}
 

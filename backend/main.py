@@ -18,6 +18,7 @@ from routes.simulation import router as simulation_router
 from routes.notifications import router as notifications_router
 from routes.roles import router as roles_router
 from routes.weather import router as weather_router
+from routes.traffic import router as traffic_router
 
 
 @asynccontextmanager
@@ -53,6 +54,7 @@ app.include_router(simulation_router)
 app.include_router(notifications_router)
 app.include_router(roles_router)
 app.include_router(weather_router)
+app.include_router(traffic_router)
 
 
 @app.get("/api/kpi")

@@ -96,3 +96,19 @@ export async function syncShipmentWeather(shipmentId) {
   return res.json();
 }
 
+export async function fetchLiveCorridorTraffic(city = 'Vellore') {
+  const res = await fetch(`${API_BASE}/traffic/live?city=${encodeURIComponent(city)}`);
+  if (!res.ok) throw new Error('Failed to fetch live corridor traffic');
+  return res.json();
+}
+
+export async function syncShipmentTraffic(shipmentId) {
+  const res = await fetch(`${API_BASE}/traffic/sync/${shipmentId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to sync live traffic with shipment');
+  return res.json();
+}
+
+

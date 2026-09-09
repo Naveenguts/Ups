@@ -22,6 +22,7 @@ export default function ShipmentDetail({
   onBack,
   onSimulateEvent,
   onSyncWeather,
+  onSyncTraffic,
   onExplainAI,
   onApplyAction,
   onOpenNotifications,
@@ -188,6 +189,31 @@ export default function ShipmentDetail({
             >
               <CloudRain style={{ width: '13px', height: '13px' }} />
               <span>🛰️ Sync OpenWeather</span>
+            </button>
+          )}
+
+          {/* Sync Live TomTom Traffic Flow */}
+          {onSyncTraffic && (
+            <button
+              onClick={onSyncTraffic}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                background: 'rgba(251, 146, 60, 0.12)',
+                border: '1px solid rgba(251, 146, 60, 0.4)',
+                color: '#FB923C',
+                fontSize: '11px',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+              }}
+              title="Query TomTom GPS live real-time traffic flow for this shipment's corridor"
+            >
+              <Car style={{ width: '13px', height: '13px' }} />
+              <span>🚗 Sync TomTom Traffic</span>
             </button>
           )}
 

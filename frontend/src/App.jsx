@@ -16,6 +16,7 @@ import {
   resetDemo,
   sendProactiveNotification,
   syncShipmentWeather,
+  syncShipmentTraffic,
 } from './services/api';
 
 export default function App() {
@@ -104,6 +105,18 @@ export default function App() {
     }
   };
 
+  const handleSyncTraffic = async () => {
+    try {
+      showToast('🚗 Querying TomTom live GPS traffic flow...');
+      const res = await syncShipmentTraffic(selectedId || 1);
+      showToast(`🚗 TomTom Traffic Synced: ${res.synced_location} (${res.traffic.current_speed_kmh} km/h, Delay: +${res.traffic.delay_seconds}s) → Risk: ${res.updated_risk_score} / 10`);
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      showToast('TomTom traffic sync failed');
+    }
+  };
+
   const handleApplyAction = async (actionPayload) => {
     try {
       const res = await applyOperationalAction(selectedId, actionPayload);
@@ -165,6 +178,7 @@ export default function App() {
         setIsStreaming={setIsStreaming}
         onSensorTick={handleSensorTick}
         onSyncWeather={handleSyncWeather}
+        onSyncTraffic={handleSyncTraffic}
         onReset={handleResetDemo}
         onOpenAIModal={() => setIsModelModalOpen(true)}
       />
@@ -210,6 +224,7 @@ export default function App() {
             onBack={() => setActiveTab('dashboard')}
             onSimulateEvent={handleSimulateEvent}
             onSyncWeather={handleSyncWeather}
+            onSyncTraffic={handleSyncTraffic}
             onExplainAI={handleOpenAIModal}
             onApplyAction={handleApplyAction}
             onOpenNotifications={() => setIsNotifModalOpen(true)}
