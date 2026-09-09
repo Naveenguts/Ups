@@ -16,7 +16,6 @@ import RiskGauge from '../components/RiskGauge';
 import RouteMap from '../components/RouteMap';
 import RiskHistoryChart from '../components/RiskHistoryChart';
 import FactorBreakdown from '../components/FactorBreakdown';
-import AIExplainModal from '../components/AIExplainModal';
 
 export default function ShipmentDetail({
   shipment,
@@ -26,8 +25,6 @@ export default function ShipmentDetail({
   onApplyAction,
   onOpenNotifications,
 }) {
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
-  const [aiData, setAiData] = useState(null);
   const [loadingAI, setLoadingAI] = useState(false);
 
   if (!shipment) return null;
@@ -41,9 +38,7 @@ export default function ShipmentDetail({
   const handleTriggerAIExplain = async () => {
     setLoadingAI(true);
     try {
-      const data = await onExplainAI(shipment.id);
-      setAiData(data);
-      setIsAIModalOpen(true);
+      await onExplainAI();
     } catch (e) {
       console.error(e);
     } finally {
@@ -392,15 +387,6 @@ export default function ShipmentDetail({
           )}
         </div>
       </div>
-
-      {/* AI Decision Modal */}
-      <AIExplainModal
-        isOpen={isAIModalOpen}
-        onClose={() => setIsAIModalOpen(false)}
-        aiData={aiData}
-        onApplyAction={onApplyAction}
-      />
-
     </div>
   );
 }

@@ -4,6 +4,7 @@ import DemoControlBar from './components/DemoControlBar';
 import Dashboard from './pages/Dashboard';
 import ShipmentDetail from './pages/ShipmentDetail';
 import NotificationModal from './components/NotificationModal';
+import AIExplainModal from './components/AIExplainModal';
 import {
   fetchKPIs,
   fetchShipments,
@@ -23,6 +24,8 @@ export default function App() {
   const [currentShipment, setCurrentShipment] = useState(null);
   const [currentDemoStep, setCurrentDemoStep] = useState(1);
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [aiData, setAiData] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg) => {
@@ -105,16 +108,30 @@ export default function App() {
     }
   };
 
+  const handleOpenAIModal = async () => {
+    try {
+      const data = await fetchAIRecommendation(selectedId);
+      setAiData(data);
+      setIsAIModalOpen(true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleExecuteDemoStep = async (stepNum) => {
     setCurrentDemoStep(stepNum);
     setSelectedId(1);
     setActiveTab('details');
 
     if (stepNum === 1) {
+      setIsAIModalOpen(false);
+      setIsNotifModalOpen(false);
       await resetDemo();
       showToast('Step 1: Baseline Healthy State (Risk 2.8 🟢, SLA Probability 12%)');
       await loadData();
     } else if (stepNum === 2) {
+      setIsAIModalOpen(false);
+      setIsNotifModalOpen(false);
       await simulateEvent(1, {
         event_type: 'WEATHER',
         severity: 9,
@@ -123,6 +140,8 @@ export default function App() {
       showToast('Step 2: Weather Event Injected → Risk rose to ~5.4 🟡');
       await loadData();
     } else if (stepNum === 3) {
+      setIsAIModalOpen(false);
+      setIsNotifModalOpen(false);
       await simulateEvent(1, {
         event_type: 'TRAFFIC',
         severity: 9,
@@ -131,6 +150,8 @@ export default function App() {
       showToast('Step 3: Traffic Congestion Injected → Risk rose to ~7.1 🟠 (SLA 65%)');
       await loadData();
     } else if (stepNum === 4) {
+      setIsAIModalOpen(false);
+      setIsNotifModalOpen(false);
       await simulateEvent(1, {
         event_type: 'HUB_DELAY',
         severity: 10,
@@ -139,12 +160,19 @@ export default function App() {
       showToast('Step 4: Hub Backlog Injected → Risk CRITICAL (8.7 / 10 🔴, SLA Breach 87%)');
       await loadData();
     } else if (stepNum === 5) {
-      showToast('Step 5: AI Explaining Root Causes & SLA Impact Prediction');
-      await fetchAIRecommendation(1);
+      setIsNotifModalOpen(false);
+      showToast('Step 5: Opening AI Root Cause Analysis 🔍');
+      const data = await fetchAIRecommendation(1);
+      setAiData(data);
+      setIsAIModalOpen(true);
     } else if (stepNum === 6) {
-      showToast('Step 6: AI Prescriptive Reroute Recommendation (Save 4.5 hrs)');
-      setActiveTab('details');
+      setIsNotifModalOpen(false);
+      showToast('Step 6: Opening AI Prescriptive Interventions (Save 4.5 hrs) 💡');
+      const data = await fetchAIRecommendation(1);
+      setAiData(data);
+      setIsAIModalOpen(true);
     } else if (stepNum === 7) {
+      setIsAIModalOpen(false);
       await applyOperationalAction(1, {
         action: 'Reroute through Bangalore Hub B',
         description: 'Divert vehicle at Vellore junction via Highway NH-75.',
@@ -154,8 +182,9 @@ export default function App() {
       showToast('Step 7: Rerouted to Route B! Risk dropped: 8.7 🔴 → 4.2 🟡, SLA breach 87% → 21%');
       await loadData();
     } else if (stepNum === 8) {
+      setIsAIModalOpen(false);
       setIsNotifModalOpen(true);
-      showToast('Step 8: Proactive Notifications Dispatched to Customer & Delivery Driver');
+      showToast('Step 8: Opening Synchronized Customer & Driver Alerts 📱');
     }
   };
 
@@ -219,12 +248,20 @@ export default function App() {
             shipment={currentShipment}
             onBack={() => setActiveTab('dashboard')}
             onSimulateEvent={handleSimulateEvent}
-            onExplainAI={fetchAIRecommendation}
+            onExplainAI={handleOpenAIModal}
             onApplyAction={handleApplyAction}
             onOpenNotifications={() => setIsNotifModalOpen(true)}
           />
         )}
       </main>
+
+      {/* AI Decision Support Modal */}
+      <AIExplainModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        aiData={aiData}
+        onApplyAction={handleApplyAction}
+      />
 
       {/* Dual Notification Center Modal */}
       <NotificationModal

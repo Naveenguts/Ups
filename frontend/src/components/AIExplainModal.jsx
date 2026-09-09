@@ -8,7 +8,7 @@ export default function AIExplainModal({ isOpen, onClose, aiData, onApplyAction 
     <div style={{
       position: 'fixed',
       inset: 0,
-      zIndex: 100,
+      zIndex: 9999,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
