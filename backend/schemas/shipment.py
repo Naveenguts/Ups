@@ -7,7 +7,7 @@ class RiskEventResponse(BaseModel):
     id: int
     shipment_id: int
     event_type: str
-    severity: int
+    severity: float
     description: str
     timestamp: datetime
 

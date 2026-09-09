@@ -10,7 +10,7 @@ class RiskEvent(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     shipment_id = Column(Integer, ForeignKey("shipments.id"), nullable=False, index=True)
     event_type = Column(String(50), nullable=False)  # WEATHER, TRAFFIC, HUB_DELAY, FLIGHT, GEOPOLITICAL
-    severity = Column(Integer, nullable=False)  # 1 to 10
+    severity = Column(Float, nullable=False)  # 1 to 10
     description = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
 

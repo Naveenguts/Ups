@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 class SimulateEventRequest(BaseModel):
     event_type: str = Field(..., description="WEATHER, TRAFFIC, HUB_DELAY, FLIGHT, GEOPOLITICAL")
-    severity: int = Field(..., ge=1, le=10, description="Severity from 1 to 10")
+    severity: float = Field(..., ge=0, le=10, description="Severity from 1 to 10")
     description: Optional[str] = None
 
 
