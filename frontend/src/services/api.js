@@ -81,24 +81,18 @@ export async function resetDemo() {
   return res.json();
 }
 
-// ----------------------------------------------------------------------
-// ROLE-BASED DERIVED VIEW ENDPOINTS (STRICT SERVER-SIDE DATA SEPARATION)
-// ----------------------------------------------------------------------
-
-export async function fetchCustomerRoleView(trackingNumber = 'UPS10245') {
-  const res = await fetch(`${API_BASE}/roles/customer/${trackingNumber}`);
-  if (!res.ok) throw new Error(`Failed to fetch Customer view for ${trackingNumber}`);
+export async function fetchLiveCorridorWeather(city = 'Vellore') {
+  const res = await fetch(`${API_BASE}/weather/live?city=${encodeURIComponent(city)}`);
+  if (!res.ok) throw new Error('Failed to fetch live corridor weather');
   return res.json();
 }
 
-export async function fetchDriverRoleView(trackingNumber = 'UPS10245') {
-  const res = await fetch(`${API_BASE}/roles/driver/${trackingNumber}`);
-  if (!res.ok) throw new Error(`Failed to fetch Driver view for ${trackingNumber}`);
+export async function syncShipmentWeather(shipmentId) {
+  const res = await fetch(`${API_BASE}/weather/sync/${shipmentId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to sync live weather with shipment');
   return res.json();
 }
 
-export async function fetchControlTowerRoleView(trackingNumber = 'UPS10245') {
-  const res = await fetch(`${API_BASE}/roles/control-tower/${trackingNumber}`);
-  if (!res.ok) throw new Error(`Failed to fetch Control Tower view for ${trackingNumber}`);
-  return res.json();
-}

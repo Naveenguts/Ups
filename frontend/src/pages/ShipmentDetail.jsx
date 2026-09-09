@@ -21,6 +21,7 @@ export default function ShipmentDetail({
   shipment,
   onBack,
   onSimulateEvent,
+  onSyncWeather,
   onExplainAI,
   onApplyAction,
   onOpenNotifications,
@@ -164,6 +165,31 @@ export default function ShipmentDetail({
           </button>
 
           <div style={{ width: '1px', height: '20px', background: '#334155' }}></div>
+
+          {/* Sync Live OpenWeather Satellite Radar */}
+          {onSyncWeather && (
+            <button
+              onClick={onSyncWeather}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                color: '#38BDF8',
+                fontSize: '11px',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+              }}
+              title="Query OpenWeatherMap live satellite radar for this shipment's corridor"
+            >
+              <CloudRain style={{ width: '13px', height: '13px' }} />
+              <span>🛰️ Sync OpenWeather</span>
+            </button>
+          )}
 
           {/* AI Decision Buttons */}
           <button

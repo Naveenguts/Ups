@@ -15,6 +15,7 @@ import {
   applyOperationalAction,
   resetDemo,
   sendProactiveNotification,
+  syncShipmentWeather,
 } from './services/api';
 
 export default function App() {
@@ -91,6 +92,18 @@ export default function App() {
     }
   };
 
+  const handleSyncWeather = async () => {
+    try {
+      showToast('🛰️ Querying OpenWeatherMap satellite radar...');
+      const res = await syncShipmentWeather(selectedId || 1);
+      showToast(`🛰️ Live Radar Synced: ${res.synced_location} (${res.weather.condition}, ${res.weather.temp_c}°C) → Risk: ${res.updated_risk_score} / 10`);
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      showToast('Weather sync failed');
+    }
+  };
+
   const handleApplyAction = async (actionPayload) => {
     try {
       const res = await applyOperationalAction(selectedId, actionPayload);
@@ -151,6 +164,7 @@ export default function App() {
         isStreaming={isStreaming}
         setIsStreaming={setIsStreaming}
         onSensorTick={handleSensorTick}
+        onSyncWeather={handleSyncWeather}
         onReset={handleResetDemo}
         onOpenAIModal={() => setIsModelModalOpen(true)}
       />
@@ -195,6 +209,7 @@ export default function App() {
             shipment={currentShipment}
             onBack={() => setActiveTab('dashboard')}
             onSimulateEvent={handleSimulateEvent}
+            onSyncWeather={handleSyncWeather}
             onExplainAI={handleOpenAIModal}
             onApplyAction={handleApplyAction}
             onOpenNotifications={() => setIsNotifModalOpen(true)}

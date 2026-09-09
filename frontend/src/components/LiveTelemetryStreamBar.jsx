@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Radio, Play, Pause, RotateCcw, Cpu, CloudRain, Car, Warehouse, Sparkles } from 'lucide-react';
+import { Radio, Play, Pause, RotateCcw, Cpu, CloudRain, Car, Warehouse, Sparkles, Satellite } from 'lucide-react';
+import { fetchLiveCorridorWeather } from '../services/api';
 
-export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, onSensorTick, onReset, onOpenAIModal }) {
+export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, onSensorTick, onSyncWeather, onReset, onOpenAIModal }) {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [liveWeather, setLiveWeather] = useState(null);
+
+  useEffect(() => {
+    fetchLiveCorridorWeather('Vellore')
+      .then((data) => setLiveWeather(data))
+      .catch((err) => console.log('Weather notice:', err));
+  }, []);
 
   const telemetryEvents = [
     {
       type: 'WEATHER',
-      severity: 2,
-      label: 'Weather Radar Normal',
-      detail: 'Clear skies along NH-48 corridor • Surface wind 8 km/h • Precipitation 0mm',
-      icon: '🟢',
-      color: '#10B981',
+      severity: liveWeather?.severity ?? 2.2,
+      label: liveWeather?.status === 'LIVE_API' ? 'OpenWeatherMap Live Radar' : 'Weather Radar Monitoring',
+      detail: liveWeather?.status === 'LIVE_API'
+        ? `Vellore Corridor (Live): ${liveWeather.description} • ${liveWeather.temp_c}°C • Wind ${liveWeather.wind_kmh} km/h • Severity ${liveWeather.severity}/10`
+        : 'Clear skies along NH-48 corridor • Surface wind 12 km/h • Standard visibility',
+      icon: CloudRain,
+      color: (liveWeather?.severity ?? 2) > 5 ? '#F87171' : '#10B981',
     },
     {
       type: 'WEATHER',
@@ -103,7 +113,9 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
             letterSpacing: '0.05em',
             textTransform: 'uppercase',
           }}>
-            {isStreaming ? 'LIVE IoT TELEMETRY STREAM' : 'IoT STREAM PAUSED'}
+            {liveWeather?.status === 'LIVE_API'
+              ? 'LIVE IoT STREAM • OPENWEATHERMAP CONNECTED 🟢'
+              : isStreaming ? 'LIVE IoT TELEMETRY STREAM' : 'IoT STREAM PAUSED'}
           </span>
         </div>
 
@@ -138,6 +150,31 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
       {/* Right Controls: Play/Pause, LLM Model Info, Reset */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         
+        {/* Sync Live OpenWeather Satellite Button */}
+        {onSyncWeather && (
+          <button
+            onClick={onSyncWeather}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: '8px',
+              fontSize: '0.6875rem',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              cursor: 'pointer',
+              background: 'rgba(56, 189, 248, 0.15)',
+              color: '#38BDF8',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+            }}
+            title="Query real-time OpenWeatherMap satellite radar for corridor"
+          >
+            <CloudRain style={{ width: '12px', height: '12px' }} />
+            <span>🛰️ Sync OpenWeather</span>
+          </button>
+        )}
+
         {/* Optional Manual Disruption Test Button */}
         {onSensorTick && (
           <button
