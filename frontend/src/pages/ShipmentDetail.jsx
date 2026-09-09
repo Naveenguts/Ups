@@ -1,0 +1,406 @@
+import React, { useState } from 'react';
+import {
+  MapPin,
+  Clock,
+  CloudRain,
+  Car,
+  Warehouse,
+  Sparkles,
+  Navigation,
+  Smartphone,
+  ShieldCheck,
+  AlertOctagon,
+  ArrowLeft,
+} from 'lucide-react';
+import RiskGauge from '../components/RiskGauge';
+import RouteMap from '../components/RouteMap';
+import RiskHistoryChart from '../components/RiskHistoryChart';
+import FactorBreakdown from '../components/FactorBreakdown';
+import AIExplainModal from '../components/AIExplainModal';
+
+export default function ShipmentDetail({
+  shipment,
+  onBack,
+  onSimulateEvent,
+  onExplainAI,
+  onApplyAction,
+  onOpenNotifications,
+}) {
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [aiData, setAiData] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(false);
+
+  if (!shipment) return null;
+
+  const score = shipment.latest_risk_score ?? 2.8;
+  const slaProb = shipment.latest_sla_probability ?? 12.0;
+  const delay = shipment.latest_estimated_delay ?? 0.6;
+  const isCritical = score >= 8.0;
+  const isRerouted = shipment.status === 'REROUTED';
+
+  const handleTriggerAIExplain = async () => {
+    setLoadingAI(true);
+    try {
+      const data = await onExplainAI(shipment.id);
+      setAiData(data);
+      setIsAIModalOpen(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out', paddingBottom: '3rem' }}>
+      
+      {/* Top Breadcrumb & Status Strip */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '1rem',
+        paddingBottom: '0.75rem',
+        borderBottom: '1px solid #1E293B',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button
+            onClick={onBack}
+            className="btn-secondary"
+            style={{ padding: '8px', borderRadius: '10px' }}
+            title="Back to fleet dashboard"
+          >
+            <ArrowLeft style={{ width: '16px', height: '16px' }} />
+          </button>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
+                Shipment #{shipment.tracking_number}
+              </h1>
+              <span style={{
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                fontFamily: 'var(--font-mono)',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                background: 'rgba(255, 181, 0, 0.15)',
+                color: 'var(--ups-gold)',
+                border: '1px solid rgba(255, 181, 0, 0.3)',
+              }}>
+                DIGITAL TWIN
+              </span>
+            </div>
+
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-slate-400)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+              <span style={{ color: '#FFFFFF', fontWeight: 700 }}>{shipment.origin}</span>
+              <span>→</span>
+              <span style={{ color: '#FFFFFF', fontWeight: 700 }}>{shipment.destination}</span>
+              <span style={{ color: '#475569' }}>•</span>
+              <MapPin style={{ width: '13px', height: '13px', color: 'var(--ups-gold)' }} />
+              <span>Location: <strong style={{ color: 'var(--ups-gold)' }}>{shipment.current_location}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Schedule Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ background: '#0F172A', padding: '6px 12px', borderRadius: '10px', border: '1px solid #1E293B' }}>
+            <span style={{ color: 'var(--text-slate-400)', fontSize: '10px', textTransform: 'uppercase', display: 'block' }}>Target SLA</span>
+            <span style={{ color: '#10B981', fontWeight: 800 }}>
+              {new Date(shipment.sla_deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} IST
+            </span>
+          </div>
+
+          <div style={{ background: '#0F172A', padding: '6px 12px', borderRadius: '10px', border: '1px solid #1E293B' }}>
+            <span style={{ color: 'var(--text-slate-400)', fontSize: '10px', textTransform: 'uppercase', display: 'block' }}>Estimated ETA</span>
+            <span style={{ color: delay > 3 ? '#EF4444' : 'var(--text-slate-200)', fontWeight: 800 }}>
+              {new Date(shipment.expected_delivery).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} IST
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* DISRUPTION SIMULATION & ACTION TOOLBAR */}
+      <div className="glass-panel" style={{
+        padding: '1rem 1.25rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '0.75rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text-slate-400)', textTransform: 'uppercase' }}>
+            Simulate External Signals:
+          </span>
+        </div>
+
+        {/* Signal Trigger Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          
+          <button
+            onClick={() => onSimulateEvent(shipment.id, 'WEATHER', 9, 'Heavy rainfall and flash flooding detected near Vellore corridor')}
+            className="btn-secondary"
+            style={{ fontSize: '11px', padding: '6px 10px' }}
+          >
+            <CloudRain style={{ width: '13px', height: '13px', color: '#60A5FA' }} />
+            <span>🌧 Simulate Rain (9/10)</span>
+          </button>
+
+          <button
+            onClick={() => onSimulateEvent(shipment.id, 'TRAFFIC', 9, 'Highway NH-48 gridlock at Ambur junction - velocity 18 km/h')}
+            className="btn-secondary"
+            style={{ fontSize: '11px', padding: '6px 10px' }}
+          >
+            <Car style={{ width: '13px', height: '13px', color: '#FB923C' }} />
+            <span>🚗 Simulate Traffic (9/10)</span>
+          </button>
+
+          <button
+            onClick={() => onSimulateEvent(shipment.id, 'HUB_DELAY', 10, 'Bangalore Hub dock congestion - 4 hour inbound terminal backlog')}
+            className="btn-secondary"
+            style={{ fontSize: '11px', padding: '6px 10px' }}
+          >
+            <Warehouse style={{ width: '13px', height: '13px', color: '#F87171' }} />
+            <span>🏭 Simulate Hub Delay (10/10)</span>
+          </button>
+
+          <div style={{ width: '1px', height: '20px', background: '#334155' }}></div>
+
+          {/* AI Decision Buttons */}
+          <button
+            onClick={handleTriggerAIExplain}
+            disabled={loadingAI}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: 'rgba(255, 181, 0, 0.12)',
+              border: '1px solid rgba(255, 181, 0, 0.4)',
+              color: 'var(--ups-gold)',
+              fontSize: '11px',
+              fontWeight: 800,
+              fontFamily: 'var(--font-mono)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Sparkles style={{ width: '13px', height: '13px' }} />
+            <span>{loadingAI ? 'Analyzing...' : 'Explain Risk & Recommend'}</span>
+          </button>
+
+          {/* Reroute Action Button */}
+          {!isRerouted ? (
+            <button
+              onClick={() => onApplyAction({
+                action: 'Reroute through Bangalore Hub B',
+                description: 'Divert vehicle at Vellore junction via Highway NH-75. Bypasses the flooded corridor and dock queue.',
+                expected_delay_reduction: 4.5,
+                expected_risk_reduction: 4.1,
+              })}
+              className="btn-primary"
+              style={{ fontSize: '11px', padding: '6px 12px' }}
+            >
+              <Navigation style={{ width: '13px', height: '13px' }} />
+              <span>🔄 Reroute Hub B</span>
+            </button>
+          ) : (
+            <span style={{
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.2)',
+              border: '1px solid rgba(16, 185, 129, 0.5)',
+              color: '#10B981',
+              fontSize: '11px',
+              fontWeight: 800,
+              fontFamily: 'var(--font-mono)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}>
+              <ShieldCheck style={{ width: '14px', height: '14px' }} />
+              <span>REROUTED TO ROUTE B</span>
+            </span>
+          )}
+
+        </div>
+      </div>
+
+      {/* Critical SLA Breach Banner */}
+      {isCritical && !isRerouted && (
+        <div className="alert-pulse-red" style={{
+          padding: '1rem 1.25rem',
+          borderRadius: '1rem',
+          background: 'rgba(239, 68, 68, 0.15)',
+          border: '1px solid #EF4444',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <AlertOctagon style={{ width: '24px', height: '24px', color: '#EF4444', flexShrink: 0 }} />
+            <div>
+              <h4 style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#FFFFFF' }}>
+                🚨 CRITICAL SLA BREACH LIKELY (Probability: {slaProb}%)
+              </h4>
+              <p style={{ fontSize: '0.75rem', color: '#FCA5A5', marginTop: '2px' }}>
+                Estimated delay of +{delay} hours will violate delivery deadline (20:00 IST). Proactive customer notification generated.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleTriggerAIExplain}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: '#EF4444',
+              color: '#FFFFFF',
+              fontWeight: 800,
+              fontSize: '11px',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            Find Best Action →
+          </button>
+        </div>
+      )}
+
+      {/* Main Grid: Interactive Map with HUD & Risk Score Gauge */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+        gap: '1.5rem',
+      }}>
+        
+        {/* Leaflet Map with HUD */}
+        <div style={{ gridColumn: 'span 2' }}>
+          <RouteMap
+            origin={shipment.origin}
+            destination={shipment.destination}
+            currentLocation={shipment.current_location}
+            riskScore={score}
+            status={shipment.status}
+            onSimulateReroute={() => onApplyAction({
+              action: 'Reroute through Bangalore Hub B',
+              description: 'Divert vehicle at Vellore junction via Highway NH-75.',
+              expected_delay_reduction: 4.5,
+              expected_risk_reduction: 4.1,
+            })}
+          />
+        </div>
+
+        {/* Live Risk Gauge & Dual Notification Box */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <RiskGauge
+            score={score}
+            slaProb={slaProb}
+            delayHours={delay}
+            status={shipment.status}
+          />
+
+          <div className="glass-panel" style={{ padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.6875rem', color: 'var(--text-slate-400)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                Communication Hub
+              </span>
+              <span style={{ fontSize: '10px', color: 'var(--ups-gold)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                Dual Channel
+              </span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-slate-300)', lineHeight: 1.5 }}>
+              Synchronized broadcast: proactive delay alerts for the customer and tactical turn-by-turn reroute instructions for the fleet driver.
+            </p>
+            <button
+              onClick={onOpenNotifications}
+              className="btn-secondary"
+              style={{ width: '100%', marginTop: '12px', padding: '8px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              <Smartphone style={{ width: '14px', height: '14px', color: 'var(--ups-gold)' }} />
+              <span>Open Notification Center ({shipment.notifications?.length ?? 0} sent)</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Row 2: Factor Breakdown & Recharts History Progression */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: '1.5rem',
+      }}>
+        <FactorBreakdown breakdown={shipment.factor_breakdown} />
+        <RiskHistoryChart history={shipment.risk_scores} />
+      </div>
+
+      {/* "What Changed?" Chronological Audit Timeline */}
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div>
+            <span style={{ fontSize: '0.6875rem', color: 'var(--text-slate-400)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+              Continuous Audit Trail
+            </span>
+            <h3 style={{ fontSize: '1.125rem', color: '#FFFFFF', marginTop: '2px' }}>
+              "What Changed?" Disruption Timeline
+            </h3>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-slate-400)', fontFamily: 'var(--font-mono)' }}>
+            {shipment.risk_events?.length ?? 0} Events Logged
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {shipment.risk_events?.length === 0 ? (
+            <p style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'var(--font-mono)', textAlign: 'center', padding: '1.5rem' }}>
+              No disruption events logged yet. Corridor conditions operating normally.
+            </p>
+          ) : (
+            shipment.risk_events?.map((ev, idx) => (
+              <div
+                key={ev.id ?? idx}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: '#0F172A',
+                  border: '1px solid #1E293B',
+                }}
+              >
+                <span style={{ fontSize: '1.25rem' }}>
+                  {ev.event_type === 'WEATHER' ? '🌧' : ev.event_type === 'TRAFFIC' ? '🚗' : '🏭'}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                    <span style={{ fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase' }}>
+                      {ev.event_type} SIGNAL (Severity: {ev.severity}/10)
+                    </span>
+                    <span style={{ color: '#64748B' }}>{new Date(ev.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-slate-300)', marginTop: '2px' }}>
+                    {ev.description}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* AI Decision Modal */}
+      <AIExplainModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        aiData={aiData}
+        onApplyAction={onApplyAction}
+      />
+
+    </div>
+  );
+}
