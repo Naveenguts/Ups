@@ -14,7 +14,11 @@ def set_gemini_api_key(key: str) -> None:
 
 
 def get_gemini_api_key() -> str:
-    return _DYNAMIC_GEMINI_KEY or os.getenv("GEMINI_API_KEY", "")
+    if _DYNAMIC_GEMINI_KEY:
+        return _DYNAMIC_GEMINI_KEY
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
+    return os.getenv("GEMINI_API_KEY", "")
 
 
 async def generate_ai_decision(shipment_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -53,7 +57,7 @@ def _call_gemini_api(api_key: str, shipment_data: Dict[str, Any]) -> Dict[str, A
     Direct REST call to Google Gemini 1.5 Flash using standard library urllib.
     Free tier: 15 Requests/Min, 1500 Requests/Day via Google AI Studio.
     """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
 
     prompt = f"""
 You are the UPS RiskPilot AI Logistics Reasoning Engine.
@@ -101,11 +105,11 @@ Respond ONLY with valid JSON with this exact structure:
         headers={"Content-Type": "application/json"}
     )
 
-    with urllib.request.urlopen(req, timeout=10) as response:
+    with urllib.request.urlopen(req, timeout=25) as response:
         data = json.loads(response.read().decode("utf-8"))
         candidate = data["candidates"][0]["content"]["parts"][0]["text"]
         result = json.loads(candidate)
-        result["model_used"] = "Google Gemini 1.5 Flash (Live API)"
+        result["model_used"] = "Google Gemini 3.6 Flash (Live API)"
         return result
 
 

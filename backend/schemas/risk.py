@@ -35,6 +35,7 @@ class AIRecommendationResponse(BaseModel):
     causes: List[str]
     prediction: str
     recommendations: List[dict]  # list of {action, description, expected_delay_reduction, priority}
+    model_used: Optional[str] = "Google Gemini 1.5 Flash"
 
 
 class ApplyActionRequest(BaseModel):

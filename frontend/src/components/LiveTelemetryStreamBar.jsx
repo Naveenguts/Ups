@@ -189,7 +189,7 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
           title="Inspect LLM Reasoning Model configuration"
         >
           <Cpu style={{ width: '12px', height: '12px' }} />
-          <span>LLM: Gemini 1.5 Flash</span>
+          <span>LLM: Gemini Flash (Live API)</span>
         </button>
 
         {/* Reset Corridor */}
