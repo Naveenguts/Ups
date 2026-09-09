@@ -65,7 +65,11 @@ async def simulate_event(
             desc = f"Heavy rainfall detected along corridor (Severity: {severity}/10)" if severity >= 7 else f"Passing rain showers detected (Severity: {severity}/10)"
         elif event_type == "TRAFFIC":
             desc = f"Severe traffic gridlock near transit bottleneck (Severity: {severity}/10)" if severity >= 7 else f"Moderate highway traffic slowdown (Severity: {severity}/10)"
-        elif event_type in ("HUB_DELAY", "PORT_DELAY"):
+        elif event_type == "PORT_DELAY":
+            desc = f"JNPT / Chennai Sea Port container terminal berth congestion & 48h customs dwell backlog (Severity: {severity}/10)"
+        elif event_type == "FLIGHT":
+            desc = f"Air Cargo Freighter aviation ground stop & airport holding delay (Severity: {severity}/10)"
+        elif event_type in ("HUB_DELAY", "SORT_DELAY"):
             desc = f"Distribution hub terminal delay and dock backlog (Severity: {severity}/10)" if severity >= 7 else f"Minor sorting facility processing queue (Severity: {severity}/10)"
         else:
             desc = f"{event_type} signal disruption updated (Severity: {severity}/10)"
@@ -85,9 +89,13 @@ async def simulate_event(
     for e in shipment.risk_events:
         if e.event_type in severities:
             severities[e.event_type] = float(e.severity)
+        elif e.event_type in ("PORT_DELAY", "FLIGHT"):
+            severities["HUB_DELAY"] = max(severities["HUB_DELAY"], float(e.severity))
     # Apply latest
     if event_type in severities:
         severities[event_type] = float(severity)
+    elif event_type in ("PORT_DELAY", "FLIGHT"):
+        severities["HUB_DELAY"] = float(severity)
 
     new_risk = calculate_risk_score(
         weather=severities["WEATHER"],

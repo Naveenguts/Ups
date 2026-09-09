@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Radio, Play, Pause, RotateCcw, Cpu, CloudRain, Car, Warehouse, Sparkles, Satellite } from 'lucide-react';
+import { Radio, Play, Pause, RotateCcw, Cpu, CloudRain, Car, Warehouse, Sparkles, Satellite, Anchor, Plane } from 'lucide-react';
 import { fetchLiveCorridorWeather } from '../services/api';
 
 export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, onSensorTick, onSyncWeather, onReset, onOpenAIModal }) {
@@ -46,6 +46,22 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
       detail: 'Bangalore Inbound Terminal: 38 vehicles queued in yard • Dock turnaround delayed +4 hrs',
       icon: Warehouse,
       color: '#F87171',
+    },
+    {
+      type: 'PORT_DELAY',
+      severity: 9,
+      label: 'Maritime Port Berth Congestion',
+      detail: 'Chennai / JNPT Port: 42 container vessels queued at anchorage • Terminal dwell time +36 hrs',
+      icon: Anchor,
+      color: '#38BDF8',
+    },
+    {
+      type: 'FLIGHT',
+      severity: 9,
+      label: 'Air Cargo Ground Stop Advisory',
+      detail: 'Bangalore Air Freight Hub: Runway squall ground stop • 6 cargo freighters held on tarmac',
+      icon: Plane,
+      color: '#A78BFA',
     },
   ];
 

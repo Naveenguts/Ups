@@ -91,8 +91,8 @@ async def get_shipment_detail(shipment_id: int, db: AsyncSession = Depends(get_d
             weather_sev = float(e.severity)
         elif e.event_type == "TRAFFIC":
             traffic_sev = float(e.severity)
-        elif e.event_type in ("HUB_DELAY", "PORT_DELAY"):
-            hub_sev = float(e.severity)
+        elif e.event_type in ("HUB_DELAY", "PORT_DELAY", "FLIGHT", "SORT_DELAY"):
+            hub_sev = max(hub_sev, float(e.severity))
 
     breakdown = get_factor_breakdown(
         weather=weather_sev,
