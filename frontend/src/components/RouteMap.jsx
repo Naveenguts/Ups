@@ -58,6 +58,8 @@ export default function RouteMap({
   return (
     <div style={{
       position: 'relative',
+      zIndex: 1,
+      isolation: 'isolate',
       width: '100%',
       height: '460px',
       borderRadius: '1.25rem',
