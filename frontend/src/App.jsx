@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import RoleSwitcher from './components/RoleSwitcher';
-import DemoControlBar from './components/DemoControlBar';
+import LiveTelemetryStreamBar from './components/LiveTelemetryStreamBar';
 import Dashboard from './pages/Dashboard';
 import ShipmentDetail from './pages/ShipmentDetail';
 import CustomerView from './pages/CustomerView';
 import DriverView from './pages/DriverView';
 import NotificationModal from './components/NotificationModal';
 import AIExplainModal from './components/AIExplainModal';
+import AIModelModal from './components/AIModelModal';
 import {
   fetchKPIs,
   fetchShipments,
@@ -31,7 +32,8 @@ export default function App() {
   const [kpis, setKpis] = useState(null);
   const [selectedId, setSelectedId] = useState(1);
   const [currentShipment, setCurrentShipment] = useState(null);
-  const [currentDemoStep, setCurrentDemoStep] = useState(1);
+  const [isStreaming, setIsStreaming] = useState(true);
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [aiData, setAiData] = useState(null);
@@ -41,6 +43,20 @@ export default function App() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  const handleSensorTick = useCallback(async (sensorEvent) => {
+    try {
+      const res = await simulateEvent(selectedId || 1, {
+        event_type: sensorEvent.type,
+        severity: sensorEvent.severity,
+        description: sensorEvent.detail,
+      });
+      showToast(`📡 Live IoT Radar: ${sensorEvent.label} → Risk: ${res.updated_risk_score} / 10`);
+      await loadData();
+    } catch (e) {
+      console.error("Telemetry streaming tick error:", e);
+    }
+  }, [selectedId]);
 
   const loadRoleData = async (role, tracking = 'UPS10245') => {
     setLoadingRole(true);
@@ -263,11 +279,13 @@ export default function App() {
         loading={loadingRole}
       />
 
-      {/* Guided 2-Minute Pitch Toolbar */}
-      <DemoControlBar
-        currentStep={currentDemoStep}
-        onExecuteStep={handleExecuteDemoStep}
+      {/* Automated Real-Time IoT Telemetry & Radar Stream Bar */}
+      <LiveTelemetryStreamBar
+        isStreaming={isStreaming}
+        setIsStreaming={setIsStreaming}
+        onSensorTick={handleSensorTick}
         onReset={handleResetDemo}
+        onOpenAIModal={() => setIsModelModalOpen(true)}
       />
 
       {/* Toast Alert */}
@@ -335,6 +353,12 @@ export default function App() {
         onClose={() => setIsAIModalOpen(false)}
         aiData={aiData}
         onApplyAction={handleApplyAction}
+      />
+
+      {/* LLM Model Info & Free Key Configuration Modal */}
+      <AIModelModal
+        isOpen={isModelModalOpen}
+        onClose={() => setIsModelModalOpen(false)}
       />
 
       {/* Dual Notification Center Modal */}

@@ -93,6 +93,32 @@ async def health_check():
     return {"status": "HEALTHY", "service": "UPS RiskPilot API", "version": "1.0.0"}
 
 
+@app.get("/api/ai/status")
+async def get_ai_status():
+    from services.ai_service import get_gemini_api_key
+    key = get_gemini_api_key()
+    return {
+        "model": "Google Gemini 1.5 Flash",
+        "provider": "Google AI Studio",
+        "free_tier": "15 Requests/Min, 1,500 Requests/Day (Zero Cost)",
+        "has_custom_key": bool(key),
+        "status": "LIVE_CLOUD_API" if key else "ZERO_KEY_AGENT_MODE",
+        "description": "Real-time multimodal logistics reasoning model predicting SLA breach probabilities and synthesizing actionable detour corridors."
+    }
+
+
+@app.post("/api/ai/set-key")
+async def update_ai_key(payload: dict):
+    from services.ai_service import set_gemini_api_key
+    key = payload.get("key", "")
+    set_gemini_api_key(key)
+    return {
+        "success": True,
+        "status": "LIVE_CLOUD_API" if key else "ZERO_KEY_AGENT_MODE",
+        "message": "Gemini API key updated successfully." if key else "Reset to zero-key agent mode."
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
