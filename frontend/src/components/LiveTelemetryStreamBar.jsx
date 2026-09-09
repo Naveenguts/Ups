@@ -41,23 +41,16 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
 
   const currentEvent = telemetryEvents[currentEventIndex];
 
-  // Background automated telemetry streaming timer
+  // Background passive telemetry streaming ticker (visual only, does not mutate database)
   useEffect(() => {
     if (!isStreaming) return;
 
     const timer = setInterval(() => {
-      setCurrentEventIndex((prev) => {
-        const nextIndex = (prev + 1) % telemetryEvents.length;
-        const event = telemetryEvents[nextIndex];
-        if (onSensorTick) {
-          onSensorTick(event);
-        }
-        return nextIndex;
-      });
-    }, 14000); // Ticks every 14 seconds automatically
+      setCurrentEventIndex((prev) => (prev + 1) % telemetryEvents.length);
+    }, 12000); // Cycles ticker report display smoothly
 
     return () => clearInterval(timer);
-  }, [isStreaming, onSensorTick]);
+  }, [isStreaming]);
 
   const Icon = currentEvent.icon;
 
@@ -145,6 +138,31 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
       {/* Right Controls: Play/Pause, LLM Model Info, Reset */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         
+        {/* Optional Manual Disruption Test Button */}
+        {onSensorTick && (
+          <button
+            onClick={() => onSensorTick(currentEvent)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: '8px',
+              fontSize: '0.6875rem',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              cursor: 'pointer',
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#F87171',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+            }}
+            title={`Manually test ${currentEvent.label} event on active shipment`}
+          >
+            <Sparkles style={{ width: '12px', height: '12px' }} />
+            <span>Simulate This Signal</span>
+          </button>
+        )}
+
         {/* Toggle Stream Play / Pause */}
         <button
           onClick={() => setIsStreaming(!isStreaming)}
@@ -163,10 +181,10 @@ export default function LiveTelemetryStreamBar({ isStreaming, setIsStreaming, on
             color: isStreaming ? '#10B981' : '#F59E0B',
             border: isStreaming ? '1px solid #10B981' : '1px solid #F59E0B',
           }}
-          title={isStreaming ? 'Pause background telemetry simulation' : 'Start background telemetry simulation'}
+          title={isStreaming ? 'Pause live telemetry feed' : 'Resume live telemetry feed'}
         >
           {isStreaming ? <Pause style={{ width: '12px', height: '12px' }} /> : <Play style={{ width: '12px', height: '12px' }} />}
-          <span>{isStreaming ? 'Streaming (14s)' : 'Resume Stream'}</span>
+          <span>{isStreaming ? 'Live Feed: Active' : 'Feed Paused'}</span>
         </button>
 
         {/* LLM Model Info Button */}
