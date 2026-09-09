@@ -36,12 +36,12 @@ export default function Navbar({ activeTab, setActiveTab, kpis, onResetDemo, onO
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
               }}>
-                AI Control Tower
+                OPERATIONS MANAGER PORTAL
               </span>
             </div>
             <div style={{ fontSize: '0.6875rem', color: 'var(--text-slate-400)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
-              <span>LIVE TELEMETRY • 545 SHIPMENTS MONITORED</span>
+              <span>MANAGER CONTROL TOWER • 545 ACTIVE SHIPMENTS</span>
             </div>
           </div>
         </div>

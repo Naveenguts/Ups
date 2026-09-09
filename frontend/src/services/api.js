@@ -80,3 +80,25 @@ export async function resetDemo() {
   if (!res.ok) throw new Error('Failed to reset demo');
   return res.json();
 }
+
+// ----------------------------------------------------------------------
+// ROLE-BASED DERIVED VIEW ENDPOINTS (STRICT SERVER-SIDE DATA SEPARATION)
+// ----------------------------------------------------------------------
+
+export async function fetchCustomerRoleView(trackingNumber = 'UPS10245') {
+  const res = await fetch(`${API_BASE}/roles/customer/${trackingNumber}`);
+  if (!res.ok) throw new Error(`Failed to fetch Customer view for ${trackingNumber}`);
+  return res.json();
+}
+
+export async function fetchDriverRoleView(trackingNumber = 'UPS10245') {
+  const res = await fetch(`${API_BASE}/roles/driver/${trackingNumber}`);
+  if (!res.ok) throw new Error(`Failed to fetch Driver view for ${trackingNumber}`);
+  return res.json();
+}
+
+export async function fetchControlTowerRoleView(trackingNumber = 'UPS10245') {
+  const res = await fetch(`${API_BASE}/roles/control-tower/${trackingNumber}`);
+  if (!res.ok) throw new Error(`Failed to fetch Control Tower view for ${trackingNumber}`);
+  return res.json();
+}

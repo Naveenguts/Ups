@@ -4,6 +4,10 @@ from sqlalchemy import select
 from models.shipment import Shipment
 from models.risk import RiskScore, RiskEvent, Recommendation
 from models.notification import Notification
+from services.notification_service import (
+    generate_customer_alert_text,
+    generate_driver_dispatch_text,
+)
 
 
 async def seed_database(db: AsyncSession):
@@ -82,6 +86,32 @@ async def seed_database(db: AsyncSession):
         timestamp=now - timedelta(hours=1),
     )
     db.add(event_2)
+
+    notif_cust_2 = Notification(
+        shipment_id=shipment_2.id,
+        type="CUSTOMER",
+        message=generate_customer_alert_text(
+            tracking_number=shipment_2.tracking_number,
+            reason="Severe highway roadwork bottleneck near Vadodara bypass",
+            new_delivery_time=(now + timedelta(hours=8, minutes=45)).strftime("%I:%M %p IST"),
+        ),
+        sent_at=now - timedelta(minutes=45),
+        status="SENT",
+    )
+    db.add(notif_cust_2)
+
+    notif_driver_2 = Notification(
+        shipment_id=shipment_2.id,
+        type="DRIVER_DISPATCH",
+        message=generate_driver_dispatch_text(
+            tracking_number=shipment_2.tracking_number,
+            new_route="State Highway 64 Bypass via Bharuch East Corridor",
+            reason_for_new_route="Avoid 4.5 hour Vadodara maintenance bottleneck on primary highway",
+        ),
+        sent_at=now - timedelta(minutes=30),
+        status="DISPATCHED",
+    )
+    db.add(notif_driver_2)
 
     # 3. Shipment UPS10267: Delhi -> Pune (High Risk)
     shipment_3 = Shipment(

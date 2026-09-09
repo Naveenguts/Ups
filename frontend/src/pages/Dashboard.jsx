@@ -64,14 +64,15 @@ export default function Dashboard({ shipments = [], kpis, onSelectShipment }) {
             marginBottom: '0.75rem',
           }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--ups-gold)', display: 'inline-block' }}></span>
-            <span>PRESCRIPTIVE LOGISTICS INTELLIGENCE</span>
+            <span>OPERATIONS MANAGER CONTROL TOWER • PRESCRIPTIVE DECISION SUPPORT</span>
           </div>
           <h1 style={{ fontSize: '1.875rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
             Prevent SLA Breaches <span style={{ color: 'var(--ups-gold)' }}>Before They Happen</span>
           </h1>
           <p style={{ color: 'var(--text-slate-300)', fontSize: '0.875rem', lineHeight: 1.6 }}>
-            Continuously ingesting weather radars, road traffic sensors, port congestion telemetry, and historical transit volatility
-            to predict delivery failure risks early, explain root causes, and prescribe actionable interventions.
+            Dedicated management console for Operations & Logistics Managers. Predict delivery failure risks early,
+            notify customers exclusively with delay reasons & revised delivery times, and dispatch drivers directly with
+            dynamic reroutes and detour reasons.
           </p>
         </div>
       </div>

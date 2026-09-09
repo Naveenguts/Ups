@@ -55,22 +55,19 @@ async def send_manual_notification(shipment_id: int, db: AsyncSession = Depends(
     delay = latest_score.estimated_delay if latest_score else 2.5
     updated_eta = (shipment.expected_delivery + timedelta(hours=delay)).strftime("%I:%M %p")
 
-    # 1. Customer Notification
+    # 1. Customer Notification: strictly Reason for Delay + New Delivery Time
     cust_msg = generate_customer_alert_text(
         tracking_number=shipment.tracking_number,
-        origin=shipment.origin,
-        destination=shipment.destination,
-        updated_eta=updated_eta,
-        causes=["adverse corridor weather and transit congestion"],
+        reason="Severe transit bottleneck & adverse weather along NH-48 corridor",
+        new_delivery_time=f"{updated_eta} IST",
     )
     cust_notif = await create_notification(db, shipment_id, "CUSTOMER", cust_msg, "SENT")
 
-    # 2. Driver Notification
+    # 2. Driver Notification: strictly New Route + Reason for New Route
     driver_msg = generate_driver_dispatch_text(
         tracking_number=shipment.tracking_number,
-        action="PREPARE TACTICAL REROUTE",
-        instruction="Monitor Vellore transit exit. Standing by for alternate Hub B routing vector.",
-        time_saved=4.5,
+        new_route="NH-75 Expressway corridor via Chittoor & Kolar bypass",
+        reason_for_new_route="Avoid NH-48 severe weather corridor delay & dock congestion at primary hub",
     )
     driver_notif = await create_notification(db, shipment_id, "DRIVER_DISPATCH", driver_msg, "DISPATCHED")
 

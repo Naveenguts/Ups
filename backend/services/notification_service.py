@@ -29,40 +29,50 @@ async def create_notification(
 
 def generate_customer_alert_text(
     tracking_number: str,
-    origin: str,
-    destination: str,
-    updated_eta: str,
-    causes: List[str]
+    reason: str,
+    new_delivery_time: str
 ) -> str:
-    cause_str = " and ".join(causes[:2]) if causes else "severe weather and traffic"
+    """
+    Customer notification containing ONLY:
+    1. Reason for Delay (why delay)
+    2. New Delivery Time (updated ETA)
+    """
     return (
-        f"⚠️ Delivery Update for #{tracking_number} ({origin} → {destination}): "
-        f"Your shipment may arrive later than originally expected due to {cause_str.lower()}. "
-        f"Updated ETA: {updated_eta}. We are actively rerouting your package to minimize delay."
+        f"📦 UPS CUSTOMER UPDATE [#{tracking_number}]\n"
+        f"• Reason for Delay: {reason}\n"
+        f"• New Delivery Time: {new_delivery_time}"
     )
 
 
 def generate_customer_recovery_text(
     tracking_number: str,
-    recovered_eta: str,
-    action_taken: str
+    reason: str,
+    new_delivery_time: str
 ) -> str:
+    """
+    Customer recovery notification containing:
+    1. Reason for Delay update
+    2. New Delivery Time
+    """
     return (
-        f"✅ Delivery Recovery Notice for #{tracking_number}: "
-        f"Operational intervention executed ({action_taken}). "
-        f"Delay minimized. Your new estimated delivery is {recovered_eta}. Thank you for choosing UPS."
+        f"📦 UPS CUSTOMER UPDATE [#{tracking_number}]\n"
+        f"• Reason for Delay: Resolved via alternate corridor ({reason})\n"
+        f"• New Delivery Time: {new_delivery_time}"
     )
 
 
 def generate_driver_dispatch_text(
     tracking_number: str,
-    action: str,
-    instruction: str,
-    time_saved: float
+    new_route: str,
+    reason_for_new_route: str
 ) -> str:
+    """
+    Driver notification containing ONLY:
+    1. New Route
+    2. Reason for New Route
+    """
     return (
-        f"🚨 FLEET DISPATCH ORDER // TRUCK DISPATCH FOR #{tracking_number}: "
-        f"Action: {action.upper()}. "
-        f"Instructions: {instruction}. "
-        f"Route deviation authorized. Estimated time reduction: {time_saved} hrs. Acknowledge on telematics terminal."
+        f"🚚 DRIVER DISPATCH ORDER [TRUCK #{tracking_number}]\n"
+        f"• New Route: {new_route}\n"
+        f"• Reason for New Route: {reason_for_new_route}"
     )

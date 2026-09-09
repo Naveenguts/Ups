@@ -75,8 +75,9 @@ export default function ShipmentDetail({
                 Shipment #{shipment.tracking_number}
               </h1>
               <span style={{
-                fontSize: '0.6875rem',
-                fontWeight: 700,
+                fontSize: '0.625rem',
+                fontWeight: 800,
+                letterSpacing: '0.05em',
                 fontFamily: 'var(--font-mono)',
                 padding: '2px 8px',
                 borderRadius: '4px',
@@ -84,7 +85,7 @@ export default function ShipmentDetail({
                 color: 'var(--ups-gold)',
                 border: '1px solid rgba(255, 181, 0, 0.3)',
               }}>
-                DIGITAL TWIN
+                MANAGER DIGITAL TWIN
               </span>
             </div>
 
@@ -127,8 +128,8 @@ export default function ShipmentDetail({
         gap: '0.75rem',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text-slate-400)', textTransform: 'uppercase' }}>
-            Simulate External Signals:
+          <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--ups-gold)', textTransform: 'uppercase' }}>
+            MANAGER CONTROLS (INJECT DISRUPTION):
           </span>
         </div>
 
@@ -243,7 +244,7 @@ export default function ShipmentDetail({
                 🚨 CRITICAL SLA BREACH LIKELY (Probability: {slaProb}%)
               </h4>
               <p style={{ fontSize: '0.75rem', color: '#FCA5A5', marginTop: '2px' }}>
-                Estimated delay of +{delay} hours will violate delivery deadline (20:00 IST). Proactive customer notification generated.
+                Estimated delay of +{delay} hours will violate deadline (20:00 IST). Customer notified exclusively with delay reason & revised delivery time.
               </p>
             </div>
           </div>
@@ -308,7 +309,7 @@ export default function ShipmentDetail({
               </span>
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-slate-300)', lineHeight: 1.5 }}>
-              Synchronized broadcast: proactive delay alerts for the customer and tactical turn-by-turn reroute instructions for the fleet driver.
+              Manager broadcast: Customer alerts contain only delay reason & revised delivery time; Fleet driver dispatch contains only new route & reroute reason.
             </p>
             <button
               onClick={onOpenNotifications}

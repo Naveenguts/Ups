@@ -12,6 +12,7 @@ from routes.shipments import router as shipments_router
 from routes.risk import router as risk_router
 from routes.simulation import router as simulation_router
 from routes.notifications import router as notifications_router
+from routes.roles import router as roles_router
 
 
 @asynccontextmanager
@@ -45,6 +46,7 @@ app.include_router(shipments_router)
 app.include_router(risk_router)
 app.include_router(simulation_router)
 app.include_router(notifications_router)
+app.include_router(roles_router)
 
 
 @app.get("/api/kpi")

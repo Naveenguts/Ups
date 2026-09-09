@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import RoleSwitcher from './components/RoleSwitcher';
 import DemoControlBar from './components/DemoControlBar';
 import Dashboard from './pages/Dashboard';
 import ShipmentDetail from './pages/ShipmentDetail';
+import CustomerView from './pages/CustomerView';
+import DriverView from './pages/DriverView';
 import NotificationModal from './components/NotificationModal';
 import AIExplainModal from './components/AIExplainModal';
 import {
@@ -14,9 +17,15 @@ import {
   applyOperationalAction,
   resetDemo,
   sendProactiveNotification,
+  fetchCustomerRoleView,
+  fetchDriverRoleView,
+  fetchControlTowerRoleView,
 } from './services/api';
 
 export default function App() {
+  const [activeRole, setActiveRole] = useState('control-tower'); // 'customer' | 'driver' | 'control-tower'
+  const [roleData, setRoleData] = useState(null);
+  const [loadingRole, setLoadingRole] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [shipments, setShipments] = useState([]);
   const [kpis, setKpis] = useState(null);
@@ -33,6 +42,26 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const loadRoleData = async (role, tracking = 'UPS10245') => {
+    setLoadingRole(true);
+    try {
+      if (role === 'customer') {
+        const data = await fetchCustomerRoleView(tracking);
+        setRoleData(data);
+      } else if (role === 'driver') {
+        const data = await fetchDriverRoleView(tracking);
+        setRoleData(data);
+      } else {
+        const data = await fetchControlTowerRoleView(tracking);
+        setRoleData(data);
+      }
+    } catch (err) {
+      console.error("Error loading role view:", err);
+    } finally {
+      setLoadingRole(false);
+    }
+  };
+
   const loadData = async () => {
     try {
       const [kpiData, shipData] = await Promise.all([fetchKPIs(), fetchShipments()]);
@@ -41,6 +70,7 @@ export default function App() {
       if (shipData.length > 0) {
         const detail = await fetchShipmentDetail(selectedId || shipData[0].id);
         setCurrentShipment(detail);
+        await loadRoleData(activeRole, detail.tracking_number);
       }
     } catch (e) {
       console.error("Error loading data:", e);
@@ -51,14 +81,22 @@ export default function App() {
     loadData();
     const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
-  }, [selectedId]);
+  }, [selectedId, activeRole]);
+
+  const handleRoleChange = async (newRole) => {
+    setActiveRole(newRole);
+    const tracking = currentShipment?.tracking_number || 'UPS10245';
+    await loadRoleData(newRole, tracking);
+  };
 
   const handleSelectShipment = async (id) => {
     setSelectedId(id);
     setActiveTab('details');
+    setActiveRole('control-tower');
     try {
       const detail = await fetchShipmentDetail(id);
       setCurrentShipment(detail);
+      await loadRoleData('control-tower', detail.tracking_number);
     } catch (e) {
       console.error(e);
     }
@@ -101,6 +139,7 @@ export default function App() {
     try {
       await resetDemo();
       setCurrentDemoStep(1);
+      setActiveRole('control-tower');
       showToast('🔄 Demo Reset: #UPS10245 returned to Healthy Baseline (Risk 2.8 🟢)');
       await loadData();
     } catch (e) {
@@ -121,15 +160,19 @@ export default function App() {
   const handleExecuteDemoStep = async (stepNum) => {
     setCurrentDemoStep(stepNum);
     setSelectedId(1);
-    setActiveTab('details');
+    const tracking = 'UPS10245';
 
     if (stepNum === 1) {
+      setActiveRole('control-tower');
+      setActiveTab('details');
       setIsAIModalOpen(false);
       setIsNotifModalOpen(false);
       await resetDemo();
       showToast('Step 1: Baseline Healthy State (Risk 2.8 🟢, SLA Probability 12%)');
       await loadData();
     } else if (stepNum === 2) {
+      setActiveRole('control-tower');
+      setActiveTab('details');
       setIsAIModalOpen(false);
       setIsNotifModalOpen(false);
       await simulateEvent(1, {
@@ -140,6 +183,8 @@ export default function App() {
       showToast('Step 2: Weather Event Injected → Risk rose to ~5.4 🟡');
       await loadData();
     } else if (stepNum === 3) {
+      setActiveRole('control-tower');
+      setActiveTab('details');
       setIsAIModalOpen(false);
       setIsNotifModalOpen(false);
       await simulateEvent(1, {
@@ -150,6 +195,8 @@ export default function App() {
       showToast('Step 3: Traffic Congestion Injected → Risk rose to ~7.1 🟠 (SLA 65%)');
       await loadData();
     } else if (stepNum === 4) {
+      setActiveRole('control-tower');
+      setActiveTab('details');
       setIsAIModalOpen(false);
       setIsNotifModalOpen(false);
       await simulateEvent(1, {
@@ -160,31 +207,35 @@ export default function App() {
       showToast('Step 4: Hub Backlog Injected → Risk CRITICAL (8.7 / 10 🔴, SLA Breach 87%)');
       await loadData();
     } else if (stepNum === 5) {
+      setActiveRole('control-tower');
+      setActiveTab('details');
       setIsNotifModalOpen(false);
-      showToast('Step 5: Opening AI Root Cause Analysis 🔍');
+      showToast('Step 5: Opening AI Root Cause Diagnostic & Solutions 🔍');
       const data = await fetchAIRecommendation(1);
       setAiData(data);
       setIsAIModalOpen(true);
     } else if (stepNum === 6) {
+      setIsAIModalOpen(false);
       setIsNotifModalOpen(false);
-      showToast('Step 6: Opening AI Prescriptive Interventions (Save 4.5 hrs) 💡');
-      const data = await fetchAIRecommendation(1);
-      setAiData(data);
-      setIsAIModalOpen(true);
+      await handleRoleChange('customer');
+      showToast('Step 6: Customer View 📱 — Showing recipient delay reason & revised ETA (Risk & telemetry hidden)');
     } else if (stepNum === 7) {
       setIsAIModalOpen(false);
+      setIsNotifModalOpen(false);
+      await handleRoleChange('driver');
+      showToast('Step 7: Driver View 🚚 — Tactical reroute instruction & hazards (PII & penalties hidden)');
+    } else if (stepNum === 8) {
+      setIsAIModalOpen(false);
+      setActiveRole('control-tower');
+      setActiveTab('details');
       await applyOperationalAction(1, {
         action: 'Reroute through Bangalore Hub B',
         description: 'Divert vehicle at Vellore junction via Highway NH-75.',
         expected_delay_reduction: 4.5,
         expected_risk_reduction: 4.1,
       });
-      showToast('Step 7: Rerouted to Route B! Risk dropped: 8.7 🔴 → 4.2 🟡, SLA breach 87% → 21%');
+      showToast('Step 8: Rerouted to Route B! Risk dropped: 8.7 🔴 → 4.2 🟡, SLA breach 87% → 21%');
       await loadData();
-    } else if (stepNum === 8) {
-      setIsAIModalOpen(false);
-      setIsNotifModalOpen(true);
-      showToast('Step 8: Opening Synchronized Customer & Driver Alerts 📱');
     }
   };
 
@@ -194,11 +245,22 @@ export default function App() {
       {/* Navigation Header */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setActiveRole('control-tower');
+        }}
         kpis={kpis}
         onResetDemo={handleResetDemo}
         onOpenNotifications={() => setIsNotifModalOpen(true)}
         unreadCount={currentShipment?.notifications?.length ?? 0}
+      />
+
+      {/* Role Switcher Bar with Data Separation Inspector */}
+      <RoleSwitcher
+        activeRole={activeRole}
+        setActiveRole={handleRoleChange}
+        currentRoleData={roleData}
+        loading={loadingRole}
       />
 
       {/* Guided 2-Minute Pitch Toolbar */}
@@ -233,25 +295,37 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Pages */}
+      {/* Main Role-Based Pages */}
       <main className="main-content">
-        {activeTab === 'dashboard' && (
-          <Dashboard
-            shipments={shipments}
-            kpis={kpis}
-            onSelectShipment={handleSelectShipment}
-          />
+        {activeRole === 'customer' && (
+          <CustomerView data={roleData} loading={loadingRole} />
         )}
 
-        {activeTab === 'details' && (
-          <ShipmentDetail
-            shipment={currentShipment}
-            onBack={() => setActiveTab('dashboard')}
-            onSimulateEvent={handleSimulateEvent}
-            onExplainAI={handleOpenAIModal}
-            onApplyAction={handleApplyAction}
-            onOpenNotifications={() => setIsNotifModalOpen(true)}
-          />
+        {activeRole === 'driver' && (
+          <DriverView data={roleData} loading={loadingRole} />
+        )}
+
+        {activeRole === 'control-tower' && (
+          <>
+            {activeTab === 'dashboard' && (
+              <Dashboard
+                shipments={shipments}
+                kpis={kpis}
+                onSelectShipment={handleSelectShipment}
+              />
+            )}
+
+            {activeTab === 'details' && (
+              <ShipmentDetail
+                shipment={currentShipment}
+                onBack={() => setActiveTab('dashboard')}
+                onSimulateEvent={handleSimulateEvent}
+                onExplainAI={handleOpenAIModal}
+                onApplyAction={handleApplyAction}
+                onOpenNotifications={() => setIsNotifModalOpen(true)}
+              />
+            )}
+          </>
         )}
       </main>
 

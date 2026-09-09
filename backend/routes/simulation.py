@@ -112,13 +112,11 @@ async def simulate_event(
         updated_eta_str = (shipment.expected_delivery + timedelta(hours=est_delay)).strftime("%I:%M %p")
         msg = generate_customer_alert_text(
             tracking_number=shipment.tracking_number,
-            origin=shipment.origin,
-            destination=shipment.destination,
-            updated_eta=updated_eta_str,
-            causes=[desc],
+            reason=desc,
+            new_delivery_time=f"{updated_eta_str} IST",
         )
         # Check if already sent recently to avoid duplicate alerts
-        has_recent = any("Delivery Update" in n.message for n in shipment.notifications)
+        has_recent = any("Reason for Delay" in n.message for n in shipment.notifications)
         if not has_recent:
             await create_notification(db, shipment_id, "CUSTOMER", msg, "SENT")
             auto_notified = True
@@ -290,21 +288,20 @@ async def apply_operational_action(
     )
     db.add(risk_score)
 
-    # 1. Dispatch Customer Recovery Notice
+    # 1. Dispatch Customer Recovery Notice (Reason for delay update + New delivery time)
     recovered_eta_str = (shipment.expected_delivery + timedelta(hours=reduced_delay)).strftime("%I:%M %p")
     cust_msg = generate_customer_recovery_text(
         tracking_number=shipment.tracking_number,
-        recovered_eta=recovered_eta_str,
-        action_taken=request.action,
+        reason=request.action,
+        new_delivery_time=f"{recovered_eta_str} IST",
     )
     await create_notification(db, shipment_id, "CUSTOMER", cust_msg, "SENT")
 
-    # 2. Dispatch Driver Fleet Route Change Order
+    # 2. Dispatch Driver Fleet Route Change Order (New route + Reason for new route)
     driver_msg = generate_driver_dispatch_text(
         tracking_number=shipment.tracking_number,
-        action=request.action,
-        instruction=request.description or "Divert from Vellore via NH-75 directly to Bangalore Hub B. Follow onboard GPS vector.",
-        time_saved=request.expected_delay_reduction or 4.5,
+        new_route="Highway NH-75 Expressway via Chittoor & Kolar bypass",
+        reason_for_new_route=f"Bypass NH-48 flash flooding, Ambur congestion, and Bangalore Hub dock backlog ({request.action})",
     )
     await create_notification(db, shipment_id, "DRIVER_DISPATCH", driver_msg, "DISPATCHED")
 

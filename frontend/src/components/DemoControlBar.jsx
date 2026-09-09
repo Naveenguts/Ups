@@ -1,16 +1,16 @@
 import React from 'react';
-import { CloudRain, Car, Warehouse, Sparkles, Lightbulb, Navigation, Smartphone, RotateCcw } from 'lucide-react';
+import { CloudRain, Car, Warehouse, Sparkles, Lightbulb, Navigation, Smartphone, Truck, RotateCcw } from 'lucide-react';
 
 export default function DemoControlBar({ currentStep, onExecuteStep, onReset }) {
   const steps = [
-    { num: 1, label: 'Healthy Baseline', icon: '🟢', desc: 'Initial state: Risk 2.8 • SLA 12%' },
-    { num: 2, label: 'Heavy Rainfall', icon: CloudRain, desc: 'Weather disruption injected → 5.4 🟡' },
-    { num: 3, label: 'Highway Traffic', icon: Car, desc: 'Highway gridlock injected → 7.1 🟠' },
-    { num: 4, label: 'Hub Terminal Delay', icon: Warehouse, desc: 'Dock backlog injected → 8.7 🔴 CRITICAL' },
-    { num: 5, label: 'AI Root Cause', icon: Sparkles, desc: 'Explain WHY & synthesize drivers' },
-    { num: 6, label: 'AI Recommendations', icon: Lightbulb, desc: 'Ranked prescriptive solutions' },
-    { num: 7, label: 'Execute Reroute B', icon: Navigation, desc: 'Bypass bottleneck → Recover to 4.2 🟡' },
-    { num: 8, label: 'Customer & Driver Alerts', icon: Smartphone, desc: 'Synchronized communication dispatched' },
+    { num: 1, label: 'Healthy Baseline', icon: '🟢', desc: 'Control Tower: Baseline Risk 2.8 • SLA 12%' },
+    { num: 2, label: 'Heavy Rainfall', icon: CloudRain, desc: 'Control Tower: Weather disruption injected → 5.4 🟡' },
+    { num: 3, label: 'Highway Traffic', icon: Car, desc: 'Control Tower: Highway gridlock injected → 7.1 🟠' },
+    { num: 4, label: 'Hub Delay', icon: Warehouse, desc: 'Control Tower: Dock backlog → 8.7 🔴 CRITICAL' },
+    { num: 5, label: 'AI Root Cause', icon: Sparkles, desc: 'Control Tower: AI diagnostic synthesis' },
+    { num: 6, label: 'Customer View', icon: Smartphone, desc: 'Recipient: New ETA, Plain Delay Reason & Reassurance' },
+    { num: 7, label: 'Driver View', icon: Truck, desc: 'In-Cab HUD: Turn-by-Turn Reroute & Road Hazards' },
+    { num: 8, label: 'Execute Recovery', icon: Navigation, desc: 'Control Tower: Approve Reroute B → Recover to 4.2 🟡' },
   ];
 
   return (
