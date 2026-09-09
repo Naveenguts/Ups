@@ -578,6 +578,7 @@ export default function RouteMap({
           borderRadius: '12px',
           padding: '12px 18px',
           boxShadow: `0 10px 30px rgba(0,0,0,0.6), 0 0 20px ${routeMeta.color}22`,
+          pointerEvents: 'auto',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             
@@ -636,12 +637,15 @@ export default function RouteMap({
             </div>
 
             {/* Block 3: Reroute Action / Revert Button */}
-            <div>
+            <div style={{ pointerEvents: 'auto' }}>
               {isRerouted ? (
                 <button
-                  onClick={() => onSelectRoute && onSelectRoute('default')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectRoute) onSelectRoute('default');
+                  }}
                   style={{
-                    padding: '7px 14px',
+                    padding: '8px 16px',
                     borderRadius: '8px',
                     background: 'rgba(255, 181, 0, 0.18)',
                     color: 'var(--ups-gold)',
@@ -660,13 +664,31 @@ export default function RouteMap({
                   <RotateCcw style={{ width: '13px', height: '13px', color: 'var(--ups-gold)' }} />
                   <span>REVERT TO DEFAULT ROUTE A</span>
                 </button>
-              ) : isCritical ? (
+              ) : isCritical || riskScore >= 5.0 ? (
                 <button
-                  onClick={() => onSelectRoute && onSelectRoute('route_b')}
-                  className="btn-primary"
-                  style={{ padding: '7px 14px', fontSize: '12px' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectRoute) onSelectRoute('route_b');
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: '#FFB500',
+                    color: '#000000',
+                    fontWeight: 900,
+                    fontSize: '12px',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    border: 'none',
+                    boxShadow: '0 4px 15px rgba(255, 181, 0, 0.4)',
+                    transition: 'all 0.2s',
+                  }}
+                  title="Click to activate Route B (Bypass disruption from Vellore Km-128)"
                 >
-                  <Navigation style={{ width: '14px', height: '14px' }} />
+                  <Navigation style={{ width: '14px', height: '14px', fill: '#000000' }} />
                   <span>Activate Route B (Save 4.9h / $4,250)</span>
                 </button>
               ) : (

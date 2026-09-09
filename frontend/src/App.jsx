@@ -123,7 +123,6 @@ export default function App() {
       const savingsStr = res.time_saved_hours ? ` [⏱️ +${res.time_saved_hours}h Saved | 💰 $${res.cost_saved_usd} Saved]` : '';
       showToast(`✓ Routing Updated: ${actionPayload.action}! SLA Recovered: ${res.recovered_sla_probability}%${savingsStr}`);
       await loadData();
-      setIsNotifModalOpen(true);
     } catch (e) {
       console.error(e);
       showToast('Failed to apply action');

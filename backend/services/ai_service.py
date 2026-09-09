@@ -29,26 +29,20 @@ async def generate_ai_decision(shipment_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     api_key = get_gemini_api_key()
 
-    tracking = shipment_data.get("tracking_number", "UPS10245")
-    origin = shipment_data.get("origin", "Chennai")
-    dest = shipment_data.get("destination", "Bangalore")
-    risk = shipment_data.get("risk_score", 8.4)
-    weather = shipment_data.get("weather", 9)
-    traffic = shipment_data.get("traffic", 9)
-    hub_delay = shipment_data.get("hub_delay", 10)
-    sla_prob = shipment_data.get("sla_breach_probability", 87)
-    delay_hours = shipment_data.get("estimated_delay_hours", 6.7)
-
-    # If Gemini API key is configured, query Gemini 1.5 Flash API
-    if api_key:
+    # If Gemini API key is configured and valid format (starts with AIzaSy), query Gemini 1.5 Flash API with strict timeout
+    if api_key and api_key.startswith("AIzaSy"):
         try:
-            gemini_result = _call_gemini_api(api_key, shipment_data)
+            import asyncio
+            gemini_result = await asyncio.wait_for(
+                asyncio.to_thread(_call_gemini_api, api_key, shipment_data),
+                timeout=4.0
+            )
             if gemini_result:
                 return gemini_result
         except Exception as e:
             print(f"Gemini API call failed, using heuristic agent fallback: {e}")
 
-    # Heuristic Agent Fallback (Zero-Key / Free Mode)
+    # Heuristic Agent Fallback (Zero-Key / Free Mode) - instant response (< 5ms)
     return _generate_agent_heuristic(shipment_data)
 
 
@@ -57,7 +51,7 @@ def _call_gemini_api(api_key: str, shipment_data: Dict[str, Any]) -> Dict[str, A
     Direct REST call to Google Gemini 1.5 Flash using standard library urllib.
     Free tier: 15 Requests/Min, 1500 Requests/Day via Google AI Studio.
     """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
 
     prompt = f"""
 You are the UPS RiskPilot AI Logistics Reasoning Engine.

@@ -529,17 +529,26 @@ export default function ShipmentDetail({
 
           <button
             onClick={handleTriggerAIExplain}
+            disabled={loadingAI}
             style={{
-              padding: '6px 12px',
+              padding: '8px 16px',
               borderRadius: '8px',
-              background: '#EF4444',
+              background: '#DC2626',
               color: '#FFFFFF',
-              fontWeight: 800,
-              fontSize: '11px',
+              fontWeight: 900,
+              fontSize: '12px',
               fontFamily: 'var(--font-mono)',
+              cursor: loadingAI ? 'wait' : 'pointer',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              boxShadow: '0 4px 15px rgba(220, 38, 38, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
             }}
           >
-            Find Best Action →
+            <Sparkles style={{ width: '13px', height: '13px' }} />
+            <span>{loadingAI ? 'Analyzing...' : 'Find Best Action →'}</span>
           </button>
         </div>
       )}
